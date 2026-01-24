@@ -17,7 +17,7 @@
 		const text = sourceText;
 
 		if (text.trim().length === 0) {
-			translatedText = "";
+			translatedText = '';
 			return;
 		}
 
@@ -95,7 +95,7 @@
 					class="pointer-events-none absolute inset-x-0 bottom-0 flex items-center justify-between p-4 md:p-6"
 				>
 					<button
-						class="pointer-events-auto cursor-pointer flex items-center gap-1.5 rounded-md bg-slate-800/50 px-2.5 py-1.5 text-xs font-medium text-slate-400 transition-colors hover:bg-slate-800 hover:text-emerald-400 active:scale-95"
+						class="pointer-events-auto flex cursor-pointer items-center gap-1.5 rounded-md bg-slate-800/50 px-2.5 py-1.5 text-xs font-medium text-slate-400 transition-colors hover:bg-slate-800 hover:text-emerald-400 active:scale-95"
 						onclick={() => navigator.clipboard.readText().then((t) => (sourceText = t))}
 						type="button"
 					>
@@ -155,7 +155,7 @@
 					class="pointer-events-none absolute inset-x-0 bottom-0 flex items-center justify-between p-4 md:p-6"
 				>
 					<button
-						class="pointer-events-auto cursor-pointer flex items-center gap-1.5 rounded-md bg-slate-800/50 px-2.5 py-1.5 text-xs font-medium text-slate-400 transition-colors hover:bg-slate-800 hover:text-emerald-400 active:scale-95"
+						class="pointer-events-auto flex cursor-pointer items-center gap-1.5 rounded-md bg-slate-800/50 px-2.5 py-1.5 text-xs font-medium text-slate-400 transition-colors hover:bg-slate-800 hover:text-emerald-400 active:scale-95"
 						onclick={() => navigator.clipboard.writeText(translatedText)}
 						type="button"
 					>

@@ -1,8 +1,14 @@
-import { json, type RequestHandler } from '@sveltejs/kit';
+import { error, json, type RequestHandler } from '@sveltejs/kit';
 import { type TranslationRequest, translationRequestSchema } from '$lib/translationRequestSchema';
 import { Language } from '$lib/Language';
 import { z } from 'zod';
 import { LLAMA_SERVER_URL, MODEL_NAME } from '$env/static/private';
+
+import { RetryAfterRateLimiter } from 'sveltekit-rate-limiter/server';
+
+const limiter = new RetryAfterRateLimiter({
+	IP: [2, '2s']
+});
 
 type LlamaCompletionRequest = {
 	prompt:
@@ -67,7 +73,17 @@ async function translate(source: Language, target: Language, input: string): Pro
 	return content;
 }
 
-export const POST: RequestHandler = async ({ request }): Promise<Response> => {
+export const POST: RequestHandler = async (event): Promise<Response> => {
+	const status = await limiter.check(event);
+	if (status.limited) {
+		event.setHeaders({
+			'Retry-After': status.retryAfter.toString()
+		});
+		return error(429);
+	}
+
+	const { request } = event;
+
 	const jsonRequest = await request.json();
 	const { source_language, target_language, text } = translationRequestSchema.parse(jsonRequest);
 	const source = Language.fromCode(source_language);
