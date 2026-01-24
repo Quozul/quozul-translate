@@ -65,18 +65,15 @@ const getInitialSourceLanguageCode = (): SupportedLanguageCode => {
 	if (browser) {
 		const code = localStorage.getItem('sourceLanguage');
 		if (isDefined(code) && Language.isValid(code)) {
-			console.log(code);
 			return code;
 		}
 	}
 	const targetLanguageCode = getInitialTargetLanguageCode();
 	for (const language of shuffle(POPULAR_LANGUAGE_CODES)) {
 		if (!navigator.languages.includes(language) && targetLanguageCode !== language) {
-			console.log(language);
 			return language;
 		}
 	}
-	console.log('fallback to fr');
 	return 'fr';
 };
 

@@ -7,7 +7,7 @@ import { LLAMA_SERVER_URL, MODEL_NAME } from '$env/static/private';
 import { RetryAfterRateLimiter } from 'sveltekit-rate-limiter/server';
 
 const limiter = new RetryAfterRateLimiter({
-	IP: [2, '2s']
+	IP: [1, '2s']
 });
 
 type LlamaCompletionRequest = {

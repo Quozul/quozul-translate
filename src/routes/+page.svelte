@@ -3,6 +3,7 @@
 	import { Language } from '$lib/Language';
 	import SearchableSelect from '$lib/components/SearchableSelect.svelte';
 	import { sourceLanguage, targetLanguage } from '$lib/storable';
+	import { smartFetch } from '$lib/fetch';
 
 	let sourceText = $state('');
 	let translatedText = $state('');
@@ -39,18 +40,23 @@
 			isLoading = true;
 			isError = false;
 			abortController = new AbortController();
-			fetch('/api/translate', {
-				method: 'POST',
-				body: JSON.stringify(request),
-				signal: abortController.signal
+			smartFetch({
+				input: '/api/translate',
+				init: {
+					method: 'POST',
+					body: JSON.stringify(request),
+					signal: abortController.signal
+				},
+				timeout: 5,
+				schema: translationRequestSchema
 			})
-				.then((response: Response) => response.json())
 				.then((data) => {
-					const { text } = translationRequestSchema.parse(data);
-					translatedText = text;
-				}).catch(() => {
-				isError = true;
-			})
+					translatedText = data.text;
+				})
+				.catch((e) => {
+					console.error('Fetch failed', e);
+					isError = true;
+				})
 				.finally(() => {
 					isLoading = false;
 				});
