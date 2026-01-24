@@ -2,6 +2,7 @@ import { json, type RequestHandler } from '@sveltejs/kit';
 import { type TranslationRequest, translationRequestSchema } from '$lib/translationRequestSchema';
 import { Language } from '$lib/Language';
 import { z } from 'zod';
+import { LLAMA_SERVER_URL, MODEL_NAME } from '$env/static/private';
 
 type LlamaCompletionRequest = {
 	prompt:
@@ -22,8 +23,7 @@ const llamaCompletionResponseSchema = z.object({
 	stop: z.boolean()
 });
 
-const SERVER_URL = process.env.LLAMA_SERVER_URL || 'http://127.0.0.1:8080/completion';
-const MODEL_NAME = process.env.MODEL_NAME || 'translategemma-4b';
+const SERVER_URL = LLAMA_SERVER_URL || 'http://127.0.0.1:8080/completion';
 
 function buildPrompt(source: Language, target: Language, input: string): string {
 	const sourceLang = source.getDisplayName(),
@@ -70,15 +70,8 @@ async function translate(source: Language, target: Language, input: string): Pro
 export const POST: RequestHandler = async ({ request }): Promise<Response> => {
 	const jsonRequest = await request.json();
 	const { source_language, target_language, text } = translationRequestSchema.parse(jsonRequest);
-	const source = new Language(source_language);
-	if (!source.isValid()) {
-		throw new Error('Invalid source language');
-	}
-
-	const target = new Language(target_language);
-	if (!target.isValid()) {
-		throw new Error('Invalid target language');
-	}
+	const source = Language.fromCode(source_language);
+	const target = Language.fromCode(target_language);
 
 	const content = await translate(source, target, text);
 

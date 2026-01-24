@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import type { Option } from '$lib/Option';
+import { isDefined } from '$lib/isDefined';
 
 const SUPPORTED_LANGUAGE_TAGS = [
 	'aa',
@@ -590,14 +591,26 @@ export type SupportedLanguageCode = (typeof SUPPORTED_LANGUAGE_TAGS)[number];
 export const supportedLanguageSchema = z.enum(SUPPORTED_LANGUAGE_TAGS);
 
 export class Language implements Option {
-	public readonly code: string;
+	public readonly code: SupportedLanguageCode;
 
 	/**
 	 * @param code An ISO language code.
 	 * It can be a full code (e.g. 'en-US') or a base code (e.g. 'en').
 	 */
-	constructor(code: string) {
+	private constructor(code: SupportedLanguageCode) {
 		this.code = code;
+	}
+
+	public static fromCode(code: string): Language {
+		if (Language.isValid(code)) {
+			return new Language(code);
+		} else {
+			throw new Error(`${code} is not a valid language`);
+		}
+	}
+
+	public static default(): Language {
+		return new Language('en');
 	}
 
 	/**
@@ -606,13 +619,15 @@ export class Language implements Option {
 	 * Example: 'en', 'en-US', 'en-GB' all result in a single 'en' instance.
 	 */
 	public static getUniqueLanguages(): Language[] {
-		const uniqueBaseCodes = new Set<string>();
+		const uniqueBaseCodes = new Set<SupportedLanguageCode>();
 
 		SUPPORTED_LANGUAGE_TAGS.forEach((tag) => {
 			// Split by hyphen and take the first part (the primary language subtag)
 			// e.g., 'en-US' -> 'en', 'az-Arab' -> 'az'
 			const baseCode = tag.split('-')[0];
-			uniqueBaseCodes.add(baseCode);
+			if (isDefined(baseCode) && Language.isValid(baseCode)) {
+				uniqueBaseCodes.add(baseCode);
+			}
 		});
 
 		return Array.from(uniqueBaseCodes)
@@ -647,8 +662,8 @@ export class Language implements Option {
 	/**
 	 * Helper to check if the current instance code is strictly supported in the original list.
 	 */
-	public isValid(): boolean {
-		const result = supportedLanguageSchema.safeParse(this.code);
+	public static isValid(code: string): code is SupportedLanguageCode {
+		const result = supportedLanguageSchema.safeParse(code);
 		return result.success;
 	}
 }
