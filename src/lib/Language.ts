@@ -39,7 +39,6 @@ const SUPPORTED_LANGUAGE_TAGS = {
 	fa: 'Persian',
 	ff: 'Fulah',
 	fi: 'Finnish',
-	'fi-FI': 'Finnish',
 	fr: 'French',
 	fy: 'Western Frisian',
 	ga: 'Irish',
