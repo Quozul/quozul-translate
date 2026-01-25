@@ -3,7 +3,7 @@
 	import { Language } from '$lib/Language';
 	import SearchableSelect from '$lib/components/SearchableSelect.svelte';
 	import { sourceLanguage, targetLanguage } from '$lib/storable';
-	import { smartFetch } from '$lib/fetch';
+	import { AbortedError, smartFetch } from '$lib/fetch';
 
 	let sourceText = $state('');
 	let translatedText = $state('');
@@ -54,14 +54,19 @@
 					translatedText = data.text;
 				})
 				.catch((e) => {
-					console.error('Fetch failed', e);
-					isError = true;
+					isError = !AbortedError.is(e);
 				})
 				.finally(() => {
 					isLoading = false;
 				});
 		}, 500);
 	});
+
+	function swapLanguages() {
+		let temp = $sourceLanguage;
+		$sourceLanguage = $targetLanguage;
+		$targetLanguage = temp;
+	}
 </script>
 
 <main
@@ -71,13 +76,32 @@
 		class="flex h-full w-full flex-col overflow-hidden bg-slate-900/50 shadow-2xl backdrop-blur-xl sm:h-auto sm:max-w-5xl sm:rounded-lg sm:border sm:border-slate-800"
 	>
 		<div
-			class="grid shrink-0 grid-cols-2 items-center justify-between border-b border-slate-800/50 bg-slate-900/30"
+			class="grid grid-cols-[1fr_auto_1fr] items-center justify-between border-b border-slate-800/50 bg-slate-900/30"
 		>
 			<SearchableSelect
 				options={validLanguages}
 				bind:value={$sourceLanguage}
 				placeholder="Select language..."
 			/>
+
+			<button
+				class="w-full cursor-pointer px-4 py-3 font-sans text-sm"
+				onclick={swapLanguages}
+				aria-label="Swap languages"
+			>
+				<svg
+					xmlns="http://www.w3.org/2000/svg"
+					width="16"
+					height="16"
+					viewBox="0 0 24 24"
+					fill="none"
+					stroke="currentColor"
+					stroke-width="2"
+					stroke-linecap="round"
+					stroke-linejoin="round"
+					><path d="M16 3h5v5M4 20L20.2 3.8M21 16v5h-5M15 15l5.1 5.1M4 4l5 5" /></svg
+				>
+			</button>
 
 			<SearchableSelect
 				options={validLanguages}

@@ -38,14 +38,30 @@ class RetryAfterError extends Error implements SmartFetchError {
 	}
 
 	retry = true;
+
+	public static is(e: unknown): e is RetryAfterError {
+		return e instanceof RetryAfterError;
+	}
 }
 
-class AbortedError extends Error implements SmartFetchError {
+export class AbortedError extends Error implements SmartFetchError {
 	constructor(private readonly source: unknown) {
 		super();
 	}
 
 	retry = true;
+
+	public static is(e: unknown): e is RetryAfterError {
+		return e instanceof AbortedError;
+	}
+}
+
+export class TimeoutError extends Error implements SmartFetchError {
+	constructor() {
+		super();
+	}
+
+	retry = false;
 }
 
 const abortableWait = (ms: number, signal?: AbortSignal | null): Promise<void> => {
@@ -127,7 +143,7 @@ export async function smartFetch<T extends z.Schema>({
 	// We use a true loop here to allow breaking via exceptions or return
 	while (true) {
 		if (Date.now() >= deadline) {
-			throw new Error('Timeout');
+			throw new TimeoutError();
 		}
 
 		if (init?.signal?.aborted) {
@@ -137,19 +153,19 @@ export async function smartFetch<T extends z.Schema>({
 		try {
 			return await trySingleFetch();
 		} catch (e) {
-			if (e instanceof AbortedError) throw e;
+			if (AbortedError.is(e)) throw e;
 
 			if (isSmartFetchError(e) && e.retry) {
 				let sleepDelay = delay;
 
-				if (e instanceof RetryAfterError) {
+				if (RetryAfterError.is(e)) {
 					sleepDelay = e.delay * 1_000;
 				}
 
 				const timeRemaining = deadline - Date.now();
 
 				if (sleepDelay >= timeRemaining) {
-					throw new Error('Timeout');
+					throw new TimeoutError();
 				}
 
 				try {
