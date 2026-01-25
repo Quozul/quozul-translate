@@ -1,79 +1,49 @@
 import { error, json, type RequestHandler } from '@sveltejs/kit';
-import { type TranslationRequest, translationRequestSchema } from '$lib/translationRequestSchema';
+import { translationRequestSchema, type TranslationResponse } from '$lib/translationRequestSchema';
 import { Language } from '$lib/Language';
-import { z } from 'zod';
-import { LLAMA_SERVER_URL, MODEL_NAME } from '$env/static/private';
-
 import { RetryAfterRateLimiter } from 'sveltekit-rate-limiter/server';
+import { LRUCache } from 'lru-cache';
+import { translate } from '$lib/translation';
+
+const cache = new LRUCache<string, TranslationResponse>({
+	max: 500,
+
+	// for use with tracking overall storage size
+	maxSize: 5000,
+	sizeCalculation: () => {
+		return 1;
+	},
+
+	// how long to live in ms
+	ttl: 1_000 * 3_600 * 24, // 24 hours
+
+	// return stale items before removing from cache?
+	allowStale: false,
+
+	updateAgeOnGet: false,
+	updateAgeOnHas: false
+});
 
 const limiter = new RetryAfterRateLimiter({
 	IP: [1, '2s']
 });
 
-type LlamaCompletionRequest = {
-	prompt:
-		| string
-		| {
-				prompt_string: string;
-				multimodal_data: string[];
-		  };
-	temperature?: number;
-	n_predict?: number;
-	stream?: boolean;
-	cache_prompt?: boolean;
-	model?: string; // This is only used when using llm-router
-};
+export const POST: RequestHandler = async (event): Promise<Response> => {
+	const { request } = event;
+	const jsonRequest = await request.json();
 
-const llamaCompletionResponseSchema = z.object({
-	content: z.string(),
-	stop: z.boolean()
-});
+	const translationRequest = translationRequestSchema.parse(jsonRequest);
 
-const SERVER_URL = LLAMA_SERVER_URL || 'http://127.0.0.1:8080/completion';
-
-function buildPrompt(source: Language, target: Language, input: string): string {
-	const sourceLang = source.getDisplayName(),
-		sourceCode = source.code;
-	const targetLang = target.getDisplayName(),
-		targetCode = target.code;
-
-	const content = `You are a professional ${sourceLang} (${sourceCode}) to ${targetLang} (${targetCode}) translator. Your goal is to accurately convey the meaning and nuances of the original ${sourceLang} text while adhering to ${targetLang} grammar, vocabulary, and cultural sensitivities.
-Produce only the ${targetLang} translation, without any additional explanations or commentary. Please translate the following ${sourceLang} text into ${targetLang}:
-
-
-${input}`;
-
-	return `<start_of_turn>user\n${content}<end_of_turn>\n<start_of_turn>model\n`;
-}
-
-async function translate(source: Language, target: Language, input: string): Promise<string> {
-	const promptText = buildPrompt(source, target, input);
-
-	const payload: LlamaCompletionRequest = {
-		prompt: promptText,
-		n_predict: -1,
-		temperature: 0,
-		cache_prompt: true,
-		stream: false,
-		model: MODEL_NAME
-	};
-
-	const response = await fetch(SERVER_URL, {
-		method: 'POST',
-		headers: { 'Content-Type': 'application/json' },
-		body: JSON.stringify(payload)
-	});
-
-	if (!response.ok) {
-		throw new Error(`API Error: ${response.status} ${await response.text()}`);
+	const cacheKey = JSON.stringify(translationRequest);
+	const cachedTranslation = cache.get(cacheKey);
+	if (cachedTranslation) {
+		const translationResponse: TranslationResponse = {
+			...cachedTranslation,
+			cached: true
+		};
+		return json(translationResponse);
 	}
 
-	const data = await response.json();
-	const { content } = llamaCompletionResponseSchema.parse(data);
-	return content;
-}
-
-export const POST: RequestHandler = async (event): Promise<Response> => {
 	const status = await limiter.check(event);
 	if (status.limited) {
 		event.setHeaders({
@@ -82,20 +52,16 @@ export const POST: RequestHandler = async (event): Promise<Response> => {
 		return error(429);
 	}
 
-	const { request } = event;
+	const source = Language.fromCode(translationRequest.source_language);
+	const target = Language.fromCode(translationRequest.target_language);
+	const translatedText = await translate(source, target, translationRequest.text);
 
-	const jsonRequest = await request.json();
-	const { source_language, target_language, text } = translationRequestSchema.parse(jsonRequest);
-	const source = Language.fromCode(source_language);
-	const target = Language.fromCode(target_language);
-
-	const content = await translate(source, target, text);
-
-	const translationResponse: TranslationRequest = {
-		text: content,
-		source_language,
-		target_language
+	const translationResponse: TranslationResponse = {
+		...translationRequest,
+		text: translatedText,
+		cached: false
 	};
 
+	cache.set(cacheKey, translationResponse);
 	return json(translationResponse);
 };
