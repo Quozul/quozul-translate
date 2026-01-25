@@ -224,6 +224,7 @@
 					bind:value={translatedText}
 					placeholder="Translation result..."
 					class="scrollbar-thin scrollbar-thumb-slate-700 scrollbar-track-transparent h-full w-full resize-none border-none bg-transparent text-lg leading-relaxed text-emerald-100/90 placeholder-slate-700 outline-none md:min-h-80"
+					readonly=""
 				></textarea>
 
 				<div
