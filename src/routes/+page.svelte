@@ -7,28 +7,35 @@
 
 	let sourceText = $state('');
 	let translatedText = $state('');
-	let debounceTimer: NodeJS.Timeout | null = null;
+
+	// State
 	let isLoading = $state(false);
 	let isError = $state(false);
+
+	// Timers & Controllers
+	let inputDebounceTimer: NodeJS.Timeout | null = null;
+	let loadingDelayTimer: NodeJS.Timeout | null = null;
 	let abortController: AbortController | null = null;
 
 	const validLanguages = Language.getUniqueLanguages();
+
+	// UX Configuration
+	const INPUT_DEBOUNCE = 500;
+	const SPINNER_DELAY = 100;
+	const MIN_SPINNER_DURATION = 500;
 
 	$effect(() => {
 		const text = sourceText;
 
 		if (text.trim().length === 0) {
 			translatedText = '';
+			isLoading = false;
 			return;
 		}
 
-		if (debounceTimer !== null) {
-			clearTimeout(debounceTimer);
-		}
-
-		if (abortController !== null) {
-			abortController.abort();
-		}
+		if (inputDebounceTimer) clearTimeout(inputDebounceTimer);
+		if (loadingDelayTimer) clearTimeout(loadingDelayTimer);
+		if (abortController) abortController.abort();
 
 		const request: TranslationRequest = {
 			text,
@@ -36,30 +43,77 @@
 			target_language: $targetLanguage
 		};
 
-		debounceTimer = setTimeout(() => {
-			isLoading = true;
+		inputDebounceTimer = setTimeout(() => {
 			isError = false;
 			abortController = new AbortController();
+			const currentSignal = abortController.signal;
+			const requestStart = Date.now();
+
+			let pendingText = '';
+
+			loadingDelayTimer = setTimeout(() => {
+				if (!currentSignal.aborted) {
+					isLoading = true;
+				}
+			}, SPINNER_DELAY);
+
 			smartFetch({
 				input: '/api/translate',
 				init: {
 					method: 'POST',
 					body: JSON.stringify(request),
-					signal: abortController.signal
+					signal: currentSignal
 				},
-				timeout: 5,
+				timeout: 5000,
 				schema: translationRequestSchema
 			})
 				.then((data) => {
-					translatedText = data.text;
+					if (!currentSignal.aborted) {
+						pendingText = data.text;
+					}
 				})
 				.catch((e) => {
-					isError = !AbortedError.is(e);
+					if (!AbortedError.is(e)) {
+						isError = true;
+					}
 				})
 				.finally(() => {
-					isLoading = false;
+					if (loadingDelayTimer) clearTimeout(loadingDelayTimer);
+
+					if (currentSignal.aborted) {
+						isLoading = false;
+						return;
+					}
+
+					const completeRequest = () => {
+						if (!isError && pendingText) {
+							translatedText = pendingText;
+						}
+						isLoading = false;
+					};
+
+					if (isLoading) {
+						const elapsed = Date.now() - requestStart;
+						const totalRequiredTime = SPINNER_DELAY + MIN_SPINNER_DURATION;
+						const remainingTime = Math.max(0, totalRequiredTime - elapsed);
+
+						if (remainingTime > 0) {
+							setTimeout(() => {
+								if (!currentSignal.aborted) completeRequest();
+							}, remainingTime);
+						} else {
+							completeRequest();
+						}
+					} else {
+						completeRequest();
+					}
 				});
-		}, 500);
+		}, INPUT_DEBOUNCE);
+
+		return () => {
+			if (inputDebounceTimer) clearTimeout(inputDebounceTimer);
+			if (loadingDelayTimer) clearTimeout(loadingDelayTimer);
+		};
 	});
 
 	function swapLanguages() {
@@ -99,8 +153,9 @@
 					stroke-width="2"
 					stroke-linecap="round"
 					stroke-linejoin="round"
-					><path d="M16 3h5v5M4 20L20.2 3.8M21 16v5h-5M15 15l5.1 5.1M4 4l5 5" /></svg
 				>
+					<path d="M16 3h5v5M4 20L20.2 3.8M21 16v5h-5M15 15l5.1 5.1M4 4l5 5" />
+				</svg>
 			</button>
 
 			<SearchableSelect
@@ -156,7 +211,7 @@
 			<div class="relative flex h-full flex-col bg-slate-950/30 p-4 md:p-6">
 				{#if isLoading}
 					<div
-						class="absolute inset-0 z-10 flex items-center justify-center bg-slate-900/50 backdrop-blur-sm"
+						class="absolute inset-0 z-10 flex items-center justify-center bg-slate-900/50 backdrop-blur-sm transition-opacity duration-300"
 					>
 						<div class="flex flex-col items-center gap-3">
 							<div

@@ -93,7 +93,7 @@ export async function smartFetch<T extends z.Schema>({
 	input,
 	init,
 	schema,
-	timeout // timeout in seconds
+	timeout // timeout in ms
 }: {
 	schema: T;
 	timeout: number;
@@ -138,7 +138,7 @@ export async function smartFetch<T extends z.Schema>({
 	};
 
 	let delay = 500; // Start with 500ms
-	const deadline = Date.now() + timeout * 1_000;
+	const deadline = Date.now() + timeout;
 
 	// We use a true loop here to allow breaking via exceptions or return
 	while (true) {
