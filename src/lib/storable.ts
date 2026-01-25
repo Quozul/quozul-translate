@@ -3,29 +3,6 @@ import { browser } from '$app/environment';
 import { Language, type SupportedLanguageCode } from '$lib/Language';
 import { isDefined } from '$lib/isDefined';
 
-const getInitialTargetLanguageCode = (): SupportedLanguageCode => {
-	if (browser) {
-		const code = localStorage.getItem('targetLanguage');
-		if (isDefined(code) && Language.isValid(code)) {
-			return code;
-		}
-	}
-	for (const language of navigator.languages) {
-		if (Language.isValid(language)) {
-			return language;
-		}
-	}
-	return 'en';
-};
-
-export const targetLanguage = writable(getInitialTargetLanguageCode());
-
-targetLanguage.subscribe((val) => {
-	if (browser) {
-		return localStorage.setItem('targetLanguage', val);
-	}
-});
-
 const POPULAR_LANGUAGE_CODES: SupportedLanguageCode[] = [
 	'en',
 	'zh',
@@ -40,7 +17,6 @@ const POPULAR_LANGUAGE_CODES: SupportedLanguageCode[] = [
 	'ur',
 	'de',
 	'ja',
-	'ar',
 	'mr',
 	'vi',
 	'te',
@@ -59,7 +35,7 @@ const POPULAR_LANGUAGE_CODES: SupportedLanguageCode[] = [
 	'kn'
 ] as const;
 
-const shuffle = <T>(arr: T[]): T[] => arr.sort(() => Math.random() - 0.5);
+const shuffle = <T>(arr: T[]): T[] => [...arr].sort(() => Math.random() - 0.5);
 
 const getInitialSourceLanguageCode = (): SupportedLanguageCode => {
 	if (browser) {
@@ -68,19 +44,50 @@ const getInitialSourceLanguageCode = (): SupportedLanguageCode => {
 			return code;
 		}
 	}
-	const targetLanguageCode = getInitialTargetLanguageCode();
-	for (const language of shuffle(POPULAR_LANGUAGE_CODES)) {
-		if (!navigator.languages.includes(language) && targetLanguageCode !== language) {
-			return language;
+
+	if (typeof navigator !== 'undefined') {
+		for (const language of navigator.languages) {
+			if (Language.isValid(language)) {
+				return language as SupportedLanguageCode;
+			}
 		}
 	}
-	return 'fr';
+	return 'en';
 };
 
 export const sourceLanguage = writable(getInitialSourceLanguageCode());
 
 sourceLanguage.subscribe((val) => {
 	if (browser) {
-		return localStorage.setItem('sourceLanguage', val);
+		localStorage.setItem('sourceLanguage', val);
+	}
+});
+
+const getInitialTargetLanguageCode = (): SupportedLanguageCode => {
+	if (browser) {
+		const code = localStorage.getItem('targetLanguage');
+		if (isDefined(code) && Language.isValid(code)) {
+			return code;
+		}
+	}
+
+	const sourceLanguageCode = getInitialSourceLanguageCode();
+	const navLangs = typeof navigator !== 'undefined' ? navigator.languages : [];
+
+	// Filter for popular languages the user likely does not know
+	for (const language of shuffle(POPULAR_LANGUAGE_CODES)) {
+		if (!navLangs.includes(language) && language !== sourceLanguageCode) {
+			return language;
+		}
+	}
+
+	return 'fr';
+};
+
+export const targetLanguage = writable(getInitialTargetLanguageCode());
+
+targetLanguage.subscribe((val) => {
+	if (browser) {
+		localStorage.setItem('targetLanguage', val);
 	}
 });
