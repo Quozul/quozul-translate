@@ -120,9 +120,15 @@
 	});
 
 	function swapLanguages() {
-		let temp = $sourceLanguage;
+		// swap languages
+		let tempLang = $sourceLanguage;
 		$sourceLanguage = $targetLanguage;
-		$targetLanguage = temp;
+		$targetLanguage = tempLang;
+
+		// swap translations
+		let tempText = sourceText;
+		sourceText = translatedText;
+		translatedText = tempText;
 	}
 </script>
 
