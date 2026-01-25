@@ -208,7 +208,7 @@
 					</button>
 
 					<div class="text-xs font-medium text-slate-600">
-						{sourceText.length} chars
+						{translatedText.length} chars
 					</div>
 				</div>
 			</div>
