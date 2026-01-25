@@ -20,7 +20,7 @@
 	let loadingDelayTimer: NodeJS.Timeout | null = null;
 	let abortController: AbortController | null = null;
 
-	const validLanguages = Language.getUniqueLanguages();
+	const validLanguages = Language.getAllLanguages();
 
 	// UX Configuration
 	const INPUT_DEBOUNCE = 500;
@@ -171,6 +171,7 @@
 					placeholder="Type here..."
 					class="scrollbar-thin scrollbar-thumb-slate-700 scrollbar-track-transparent h-full w-full resize-none border-none bg-transparent text-lg leading-relaxed text-slate-200 placeholder-slate-600 outline-none md:min-h-80"
 					spellcheck="false"
+					autocomplete="off"
 				></textarea>
 
 				<div
@@ -230,7 +231,8 @@
 					bind:value={translatedText}
 					placeholder="Translation result..."
 					class="scrollbar-thin scrollbar-thumb-slate-700 scrollbar-track-transparent h-full w-full resize-none border-none bg-transparent text-lg leading-relaxed text-emerald-100/90 placeholder-slate-700 outline-none md:min-h-80"
-					readonly=""
+					readonly
+					autocomplete="off"
 				></textarea>
 
 				<div

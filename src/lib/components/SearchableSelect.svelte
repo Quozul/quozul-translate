@@ -143,6 +143,7 @@
 			type="text"
 			{placeholder}
 			class="w-full cursor-pointer border-slate-700 bg-slate-800 px-4 py-3 pr-10 text-slate-200 placeholder-slate-500 transition-all outline-none hover:bg-slate-700/80 focus:border-blue-500 focus:bg-slate-800 focus:ring-2 focus:ring-blue-500/20"
+			autocomplete="off"
 		/>
 
 		<!-- Chevron Icon (Absolute positioned over input) -->
