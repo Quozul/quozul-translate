@@ -4,6 +4,9 @@
 	import SearchableSelect from '$lib/components/SearchableSelect.svelte';
 	import { sourceLanguage, targetLanguage } from '$lib/storable';
 	import { AbortedError, smartFetch } from '$lib/fetch';
+	import Copy from '$lib/components/icons/Copy.svelte';
+	import Shuffle from '$lib/components/icons/Shuffle.svelte';
+	import X from '$lib/components/icons/X.svelte';
 
 	let sourceText = $state('');
 	let translatedText = $state('');
@@ -143,19 +146,7 @@
 				onclick={swapLanguages}
 				aria-label="Swap languages"
 			>
-				<svg
-					xmlns="http://www.w3.org/2000/svg"
-					width="16"
-					height="16"
-					viewBox="0 0 24 24"
-					fill="none"
-					stroke="currentColor"
-					stroke-width="2"
-					stroke-linecap="round"
-					stroke-linejoin="round"
-				>
-					<path d="M16 3h5v5M4 20L20.2 3.8M21 16v5h-5M15 15l5.1 5.1M4 4l5 5" />
-				</svg>
+				<Shuffle />
 			</button>
 
 			<SearchableSelect
@@ -168,7 +159,7 @@
 		<div
 			class="grid min-h-0 flex-1 grid-cols-1 divide-y divide-slate-800/50 md:grid-cols-2 md:divide-x md:divide-y-0"
 		>
-			<div class="relative flex h-full flex-col p-4 md:p-6">
+			<div class="relative flex h-full p-4 md:p-6">
 				<textarea
 					bind:value={sourceText}
 					placeholder="Type here..."
@@ -179,28 +170,27 @@
 				<div
 					class="pointer-events-none absolute inset-x-0 bottom-0 flex items-center justify-between p-4 md:p-6"
 				>
-					<button
-						class="pointer-events-auto flex cursor-pointer items-center gap-1.5 rounded-md bg-slate-800/50 px-2.5 py-1.5 text-xs font-medium text-slate-400 transition-colors hover:bg-slate-800 hover:text-emerald-400 active:scale-95"
-						onclick={() => navigator.clipboard.readText().then((t) => (sourceText = t))}
-						type="button"
-					>
-						<svg
-							xmlns="http://www.w3.org/2000/svg"
-							width="14"
-							height="14"
-							viewBox="0 0 24 24"
-							fill="none"
-							stroke="currentColor"
-							stroke-width="2"
-							stroke-linecap="round"
-							stroke-linejoin="round"
-							class="lucide lucide-clipboard"
+					<div class="flex gap-2">
+						<button
+							class="pointer-events-auto flex cursor-pointer items-center gap-1.5 rounded-md bg-slate-800/50 px-2.5 py-1.5 text-xs font-medium text-slate-400 transition-colors hover:bg-slate-800 hover:text-emerald-400 active:scale-95"
+							onclick={() => navigator.clipboard.readText().then((t) => (sourceText = t))}
+							type="button"
 						>
-							<rect width="8" height="4" x="8" y="2" rx="1" ry="1" />
-							<path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2" />
-						</svg>
-						Paste
-					</button>
+							<Copy />
+							Paste
+						</button>
+
+						{#if sourceText.length > 0}
+							<button
+								class="pointer-events-auto flex cursor-pointer items-center gap-1.5 rounded-md bg-slate-800/50 px-2.5 py-1.5 text-xs font-medium text-slate-400 transition-colors hover:bg-slate-800 hover:text-emerald-400 active:scale-95"
+								onclick={() => (sourceText = '')}
+								type="button"
+							>
+								<X />
+								Clear
+							</button>
+						{/if}
+					</div>
 
 					<div class="text-xs font-medium text-slate-600">
 						{sourceText.length} chars
@@ -244,21 +234,7 @@
 						onclick={() => navigator.clipboard.writeText(translatedText)}
 						type="button"
 					>
-						<svg
-							xmlns="http://www.w3.org/2000/svg"
-							width="14"
-							height="14"
-							viewBox="0 0 24 24"
-							fill="none"
-							stroke="currentColor"
-							stroke-width="2"
-							stroke-linecap="round"
-							stroke-linejoin="round"
-							class="lucide lucide-clipboard"
-						>
-							<rect width="8" height="4" x="8" y="2" rx="1" ry="1" />
-							<path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2" />
-						</svg>
+						<Copy />
 						Copy
 					</button>
 
