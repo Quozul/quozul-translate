@@ -54,7 +54,14 @@ export const POST: RequestHandler = async (event): Promise<Response> => {
 
 	const source = Language.fromCode(translationRequest.source_language);
 	const target = Language.fromCode(translationRequest.target_language);
-	const translatedText = await translate(source, target, translationRequest.text);
+
+	const controller = new AbortController();
+	const abortHandler = () => {
+		controller.abort(request.signal.reason);
+	};
+	request.signal.addEventListener('abort', abortHandler);
+
+	const translatedText = await translate(controller, source, target, translationRequest.text);
 
 	const translationResponse: TranslationResponse = {
 		...translationRequest,

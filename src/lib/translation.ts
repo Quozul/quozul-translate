@@ -39,6 +39,7 @@ ${input}`;
 }
 
 export async function translate(
+	abortController: AbortController,
 	source: Language,
 	target: Language,
 	input: string
@@ -57,6 +58,7 @@ export async function translate(
 	const response = await fetch(SERVER_URL, {
 		method: 'POST',
 		headers: { 'Content-Type': 'application/json' },
+		signal: abortController.signal,
 		body: JSON.stringify(payload)
 	});
 
