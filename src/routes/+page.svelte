@@ -205,7 +205,7 @@
 				</div>
 			</div>
 
-			<div class="flex h-full flex-col bg-slate-950/30 p-4 md:p-6">
+			<div class="relative flex h-full flex-col bg-slate-950/30 p-4 md:p-6">
 				{#if isLoading}
 					<div
 						class="absolute inset-0 z-10 flex items-center justify-center bg-slate-900/50 backdrop-blur-sm transition-opacity duration-300"
