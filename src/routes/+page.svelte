@@ -165,21 +165,21 @@
 		<div
 			class="grid min-h-0 flex-1 grid-cols-1 divide-y divide-slate-800/50 md:grid-cols-2 md:divide-x md:divide-y-0"
 		>
-			<div class="relative flex h-full p-4 md:p-6">
+			<div class="flex h-full flex-col p-4 md:p-6">
 				<textarea
 					bind:value={sourceText}
 					placeholder="Type here..."
-					class="scrollbar-thin scrollbar-thumb-slate-700 scrollbar-track-transparent h-full w-full resize-none border-none bg-transparent text-lg leading-relaxed text-slate-200 placeholder-slate-600 outline-none md:min-h-80"
+					class="scrollbar-thin scrollbar-thumb-slate-700 scrollbar-track-transparent flex-1 w-full resize-none border-none bg-transparent text-lg leading-relaxed text-slate-200 placeholder-slate-600 outline-none md:min-h-80"
 					spellcheck="false"
 					autocomplete="off"
 				></textarea>
 
 				<div
-					class="pointer-events-none absolute inset-x-0 bottom-0 flex items-center justify-between p-4 md:p-6"
+					class="flex items-center justify-between pt-4"
 				>
 					<div class="flex gap-2">
 						<button
-							class="pointer-events-auto flex cursor-pointer items-center gap-1.5 rounded-md bg-slate-800/50 px-2.5 py-1.5 text-xs font-medium text-slate-400 transition-colors hover:bg-slate-800 hover:text-emerald-400 active:scale-95"
+							class="flex cursor-pointer items-center gap-1.5 rounded-md bg-slate-800/50 px-2.5 py-1.5 text-xs font-medium text-slate-400 transition-colors hover:bg-slate-800 hover:text-emerald-400 active:scale-95"
 							onclick={() => navigator.clipboard.readText().then((t) => (sourceText = t))}
 							type="button"
 						>
@@ -189,7 +189,7 @@
 
 						{#if sourceText.length > 0}
 							<button
-								class="pointer-events-auto flex cursor-pointer items-center gap-1.5 rounded-md bg-slate-800/50 px-2.5 py-1.5 text-xs font-medium text-slate-400 transition-colors hover:bg-slate-800 hover:text-emerald-400 active:scale-95"
+								class="flex cursor-pointer items-center gap-1.5 rounded-md bg-slate-800/50 px-2.5 py-1.5 text-xs font-medium text-slate-400 transition-colors hover:bg-slate-800 hover:text-emerald-400 active:scale-95"
 								onclick={() => (sourceText = '')}
 								type="button"
 							>
@@ -205,7 +205,7 @@
 				</div>
 			</div>
 
-			<div class="relative flex h-full flex-col bg-slate-950/30 p-4 md:p-6">
+			<div class="flex h-full flex-col bg-slate-950/30 p-4 md:p-6">
 				{#if isLoading}
 					<div
 						class="absolute inset-0 z-10 flex items-center justify-center bg-slate-900/50 backdrop-blur-sm transition-opacity duration-300"
@@ -230,16 +230,16 @@
 				<textarea
 					bind:value={translatedText}
 					placeholder="Translation result..."
-					class="scrollbar-thin scrollbar-thumb-slate-700 scrollbar-track-transparent h-full w-full resize-none border-none bg-transparent text-lg leading-relaxed text-emerald-100/90 placeholder-slate-700 outline-none md:min-h-80"
+					class="scrollbar-thin scrollbar-thumb-slate-700 scrollbar-track-transparent flex-1 w-full resize-none border-none bg-transparent text-lg leading-relaxed text-emerald-100/90 placeholder-slate-700 outline-none md:min-h-80"
 					readonly
 					autocomplete="off"
 				></textarea>
 
 				<div
-					class="pointer-events-none absolute inset-x-0 bottom-0 flex items-center justify-between p-4 md:p-6"
+					class="flex items-center justify-between pt-4"
 				>
 					<button
-						class="pointer-events-auto flex cursor-pointer items-center gap-1.5 rounded-md bg-slate-800/50 px-2.5 py-1.5 text-xs font-medium text-slate-400 transition-colors hover:bg-slate-800 hover:text-emerald-400 active:scale-95"
+						class="flex cursor-pointer items-center gap-1.5 rounded-md bg-slate-800/50 px-2.5 py-1.5 text-xs font-medium text-slate-400 transition-colors hover:bg-slate-800 hover:text-emerald-400 active:scale-95"
 						onclick={() => navigator.clipboard.writeText(translatedText)}
 						type="button"
 					>
