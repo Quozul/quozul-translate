@@ -171,12 +171,9 @@
 					placeholder="Type here..."
 					class="scrollbar-thin scrollbar-thumb-slate-700 scrollbar-track-transparent flex-1 w-full resize-none border-none bg-transparent text-lg leading-relaxed text-slate-200 placeholder-slate-600 outline-none md:min-h-80"
 					spellcheck="false"
-					autocomplete="off"
-				></textarea>
+					autocomplete="off"></textarea>
 
-				<div
-					class="flex items-center justify-between pt-4"
-				>
+				<div class="flex items-center justify-between pt-4">
 					<div class="flex gap-2">
 						<button
 							class="flex cursor-pointer items-center gap-1.5 rounded-md bg-slate-800/50 px-2.5 py-1.5 text-xs font-medium text-slate-400 transition-colors hover:bg-slate-800 hover:text-emerald-400 active:scale-95"
@@ -232,12 +229,9 @@
 					placeholder="Translation result..."
 					class="scrollbar-thin scrollbar-thumb-slate-700 scrollbar-track-transparent flex-1 w-full resize-none border-none bg-transparent text-lg leading-relaxed text-emerald-100/90 placeholder-slate-700 outline-none md:min-h-80"
 					readonly
-					autocomplete="off"
-				></textarea>
+					autocomplete="off"></textarea>
 
-				<div
-					class="flex items-center justify-between pt-4"
-				>
+				<div class="flex items-center justify-between pt-4">
 					<button
 						class="flex cursor-pointer items-center gap-1.5 rounded-md bg-slate-800/50 px-2.5 py-1.5 text-xs font-medium text-slate-400 transition-colors hover:bg-slate-800 hover:text-emerald-400 active:scale-95"
 						onclick={() => navigator.clipboard.writeText(translatedText)}

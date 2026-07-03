@@ -8,7 +8,7 @@
 		options = [],
 		value = $bindable(null),
 		placeholder = 'Select an option...',
-		notFoundText = 'No results found',
+		notFoundText = 'No results found'
 	} = $props();
 
 	let isOpen = $state(false);
