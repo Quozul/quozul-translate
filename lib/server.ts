@@ -4,9 +4,9 @@ import { MAX_TEXT_LENGTH, type TranslationRequestBody } from "./types";
 
 export const DEFAULT_BASE_URL = "http://127.0.0.1:9931/v1";
 const MODEL_PRESETS: Record<string, string> = {
-  fast: "Hy-MT2-1.8B",
-  quality: "Hy-MT2-7B",
-  turbo: "Hy-MT2-30B-A3B",
+  fast: "local/hy-mt2-1.8b",
+  quality: "local/hy-mt2-7b",
+  turbo: "local/hy-mt2-30b-a3b",
 };
 
 export const REQUEST_TIMEOUT_MS = 85_000;

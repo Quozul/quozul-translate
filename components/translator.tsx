@@ -28,7 +28,7 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import { Textarea } from "@/components/ui/textarea";
 import { LANGUAGES } from "@/lib/languages";
-import { MAX_TEXT_LENGTH } from "@/lib/types";
+import { MAX_TEXT_LENGTH, translationResponseBodySchema } from "@/lib/types";
 import {
   CopyIcon,
   EllipsisVerticalIcon,
@@ -177,11 +177,11 @@ export function Translator() {
         if (!response.ok) {
           throw new Error(statusMessage(response.status));
         }
-        const result = (await response.json()) as { translation?: unknown };
-        if (typeof result.translation !== "string") {
+        const result = translationResponseBodySchema.safeParse(await response.json());
+        if (!result.success) {
           throw new Error("Invalid translation response.");
         }
-        if (result.translation.trim() === "") {
+        if (result.data.translation.trim() === "") {
           throw new Error(
             "The model returned an empty translation. Please try again.",
           );
@@ -189,8 +189,8 @@ export function Translator() {
         // Count completed translations, including cache hits, rather than picker browsing.
         usage.current[request.target] = (usage.current[request.target] ?? 0) + 1;
         save();
-        translatedRef.current = result.translation;
-        setTranslated(result.translation);
+        translatedRef.current = result.data.translation;
+        setTranslated(result.data.translation);
         setResultTarget(request.target);
         setPhase("ready");
       })
@@ -386,8 +386,14 @@ export function Translator() {
         </Sheet>
       </div>
 
-      <div className="flex flex-1 flex-col p-3">
-        <section className="relative flex flex-1 flex-col" aria-label="Source text">
+      <div
+        className={
+          phase === "idle"
+            ? "grid flex-1 grid-rows-[1fr] p-3"
+            : "grid flex-1 grid-rows-[1fr_1fr] p-3"
+        }
+      >
+        <section className="relative flex min-h-0 flex-col" aria-label="Source text">
           {text !== "" && (
             <Button
               type="button"
@@ -431,7 +437,7 @@ export function Translator() {
         </section>
 
         <section
-          className="border-t pt-3"
+          className="min-h-0 overflow-y-auto pt-3"
           aria-label="Translation"
           hidden={phase === "idle"}
           aria-busy={phase === "loading"}
@@ -457,7 +463,7 @@ export function Translator() {
               <p
                 dir="auto"
                 aria-label={`${resultTarget} translation`}
-                className="text-2xl leading-normal break-words whitespace-pre-wrap"
+                className="text-2xl leading-normal wrap-break-word whitespace-pre-wrap"
               >
                 {translated}
               </p>

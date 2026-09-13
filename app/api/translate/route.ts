@@ -1,7 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { translationCache } from "@/lib/cache";
 import { ApiError, sanitize, translateText } from "@/lib/server";
-import type { TranslationRequestBody, TranslationResponseBody } from "@/lib/types";
+import {
+  translationRequestBodySchema,
+  type TranslationResponseBody,
+} from "@/lib/types";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -11,19 +14,17 @@ function failure(status: number, message: string): NextResponse {
 }
 
 export async function POST(request: NextRequest): Promise<NextResponse> {
-  let body: TranslationRequestBody;
+  let json: unknown;
   try {
-    body = await request.json();
+    json = await request.json();
   } catch {
     return failure(400, "Invalid JSON body.");
   }
-  if (
-    typeof body?.text !== "string" ||
-    typeof body?.target !== "string" ||
-    typeof body?.model !== "string"
-  ) {
+  const parsed = translationRequestBodySchema.safeParse(json);
+  if (!parsed.success) {
     return failure(400, "Invalid request.");
   }
+  const body = parsed.data;
   try {
     const key = sanitize(body);
     if (key.text === "") {
