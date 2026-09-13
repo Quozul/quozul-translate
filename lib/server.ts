@@ -1,13 +1,19 @@
 import OpenAI, { APIConnectionTimeoutError } from "openai";
-import { LANGUAGES } from "./languages";
+import {
+  languageByName,
+  promptName,
+  type Language,
+} from "./languages";
+import {
+  DETECT_SOURCE,
+  familyById,
+  isModelPreset,
+  resolveFamily,
+  type ModelFamily,
+} from "./models";
 import { MAX_TEXT_LENGTH, type TranslationRequestBody } from "./types";
 
 export const DEFAULT_BASE_URL = "http://127.0.0.1:9931/v1";
-const MODEL_PRESETS: Record<string, string> = {
-  fast: "local/hy-mt2-1.8b",
-  quality: "local/hy-mt2-7b",
-  turbo: "local/hy-mt2-30b-a3b",
-};
 
 export const REQUEST_TIMEOUT_MS = 85_000;
 
@@ -22,7 +28,12 @@ export class ApiError extends Error {
 
 export interface SanitizedRequest {
   text: string;
-  target: string;
+  /// `null` means the source language is detected automatically.
+  source: Language | null;
+  target: Language;
+  /// Family that will actually run; may differ from the requested one when
+  /// the requested family does not support the language pair.
+  family: ModelFamily;
   model: string;
 }
 
@@ -35,15 +46,44 @@ export function sanitize(request: TranslationRequestBody): SanitizedRequest {
   if (/[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/.test(text)) {
     throw new ApiError(400, "Text contains unsupported control characters.");
   }
-  const target = request.target.trim();
-  if (!LANGUAGES.some((language) => language.name === target)) {
+  const target = languageByName(request.target.trim());
+  if (!target) {
     throw new ApiError(400, "Choose a supported target language.");
   }
-  const model = MODEL_PRESETS[request.model.trim()];
-  if (request.model.trim() !== "" && model === undefined) {
+  const rawSource = request.source.trim();
+  let source: Language | null = null;
+  if (rawSource !== "" && rawSource !== DETECT_SOURCE) {
+    const resolved = languageByName(rawSource);
+    if (!resolved) {
+      throw new ApiError(400, "Choose a supported source language.");
+    }
+    source = resolved;
+  }
+  const requested = familyById(request.family.trim());
+  if (!requested) {
+    throw new ApiError(400, "Choose a supported model family.");
+  }
+  const preset = request.preset.trim();
+  if (!isModelPreset(preset)) {
     throw new ApiError(400, "Choose a supported model preset.");
   }
-  return { text, target, model: model ?? MODEL_PRESETS.fast };
+  const family = resolveFamily(requested.id, source?.code ?? null, target.code);
+  if (!family) {
+    throw new ApiError(
+      400,
+      "No model supports this language pair. Choose a source language or another model family.",
+    );
+  }
+  return { text, source, target, family, model: family.models[preset] };
+}
+
+function buildPrompt(sanitized: SanitizedRequest): string {
+  const targetName = promptName(sanitized.target, sanitized.family.id);
+  if (sanitized.family.requiresSource && sanitized.source !== null) {
+    const sourceName = promptName(sanitized.source, sanitized.family.id);
+    return `Translate this from ${sourceName} to ${targetName}:\n${sourceName}: ${sanitized.text}\n${targetName}:`;
+  }
+  return `Translate the following text into ${targetName}. Note that you should only output the translated result without any additional explanation:\n\n${sanitized.text}\n`;
 }
 
 export async function translateText(
@@ -60,7 +100,7 @@ export async function translateText(
     timeout: REQUEST_TIMEOUT_MS,
     maxRetries: 0,
   });
-  const prompt = `Translate the following text into ${sanitized.target}. Note that you should only output the translated result without any additional explanation:\n\n${sanitized.text}\n`;
+  const prompt = buildPrompt(sanitized);
   let translated: string | undefined;
   try {
     const response = await client.chat.completions.create(

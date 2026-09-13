@@ -6,6 +6,8 @@ const MAX_CACHE_BYTES = 16 * 1024 * 1024;
 
 export interface CacheKey {
   text: string;
+  /// Source language name; empty string for automatic detection.
+  source: string;
   target: string;
   model: string;
 }
@@ -18,7 +20,9 @@ interface Entry {
 
 function keyToString(key: CacheKey): string {
   return createHash("sha256")
-    .update(`${key.model}\u0000${key.target}\u0000${key.text}`)
+    .update(
+      `${key.model}\u0000${key.source}\u0000${key.target}\u0000${key.text}`,
+    )
     .digest("hex");
 }
 
@@ -44,6 +48,7 @@ class TranslationCache {
     this.prune(now);
     const bytes =
       Buffer.byteLength(key.text) +
+      Buffer.byteLength(key.source) +
       Buffer.byteLength(key.target) +
       Buffer.byteLength(key.model) +
       Buffer.byteLength(translation);

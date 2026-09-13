@@ -26,15 +26,21 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
   }
   const body = parsed.data;
   try {
-    const key = sanitize(body);
-    if (key.text === "") {
+    const sanitized = sanitize(body);
+    if (sanitized.text === "") {
       return NextResponse.json<TranslationResponseBody>({ translation: "" });
     }
+    const key = {
+      text: sanitized.text,
+      source: sanitized.source?.name ?? "",
+      target: sanitized.target.name,
+      model: sanitized.model,
+    };
     const cached = translationCache().get(key, Date.now());
     if (cached !== undefined) {
       return NextResponse.json<TranslationResponseBody>({ translation: cached });
     }
-    const result = await translateText(key, request.signal);
+    const result = await translateText(sanitized, request.signal);
     const translation = result.trim();
     if (translation === "") {
       return failure(502, "The model returned an empty translation.");
