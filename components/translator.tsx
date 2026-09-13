@@ -9,8 +9,31 @@ import {
   type CompositionEvent,
 } from "react";
 import { LanguagePicker } from "./language-picker";
+import { Button } from "@/components/ui/button";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from "@/components/ui/sheet";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Textarea } from "@/components/ui/textarea";
 import { LANGUAGES } from "@/lib/languages";
 import { MAX_TEXT_LENGTH } from "@/lib/types";
+import {
+  CopyIcon,
+  EllipsisVerticalIcon,
+  XIcon,
+} from "lucide-react";
 
 type Phase = "idle" | "waiting" | "loading" | "ready" | "failed";
 
@@ -64,6 +87,7 @@ export function Translator() {
   const [phase, setPhase] = useState<Phase>("idle");
   const [error, setError] = useState("");
   const [copyMessage, setCopyMessage] = useState("");
+  const [settingsOpen, setSettingsOpen] = useState(false);
 
   const source = useRef<HTMLTextAreaElement>(null);
   const generation = useRef(0);
@@ -244,9 +268,9 @@ export function Translator() {
     schedule();
   };
 
-  const changeModel = (event: ChangeEvent<HTMLSelectElement>) => {
-    modelRef.current = event.target.value;
-    setModel(event.target.value);
+  const changeModel = (value: string) => {
+    modelRef.current = value;
+    setModel(value);
     save();
     schedule();
   };
@@ -305,70 +329,86 @@ export function Translator() {
           : "";
 
   return (
-    <main>
-      <div className="language-bar">
-        <span className="source-language" aria-label="Automatically detect source language">
+    <main className="mx-auto flex min-h-dvh w-full max-w-[760px] flex-col">
+      <div className="flex items-center gap-2 border-b px-3 py-2">
+        <span
+          className="flex-1 truncate text-center text-[0.9375rem]"
+          aria-label="Automatically detect source language"
+        >
           Detect language
         </span>
-        <span aria-hidden="true" className="arrow">
+        <span aria-hidden="true" className="text-muted-foreground">
           →
         </span>
-        <div className="target-language">
+        <div className="min-w-0 flex-1">
           <LanguagePicker selected={target} frequent={frequent} onSelect={chooseLanguage} />
         </div>
-        <details className="settings">
-          <summary aria-label="Settings" title="Settings">
-            <svg viewBox="0 0 24 24" aria-hidden="true">
-              <circle cx="12" cy="5" r="2" />
-              <circle cx="12" cy="12" r="2" />
-              <circle cx="12" cy="19" r="2" />
-            </svg>
-          </summary>
-          <div className="model-settings">
-            <label htmlFor="model">Model</label>
-            <select
-              id="model"
-              value={model}
-              aria-describedby="model-detail"
-              onChange={changeModel}
+        <Sheet open={settingsOpen} onOpenChange={setSettingsOpen}>
+          <SheetTrigger asChild>
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              aria-label="Settings"
+              title="Settings"
             >
-              <option value="fast">Fast</option>
-              <option value="quality">Quality</option>
-              <option value="turbo">Turbo</option>
-            </select>
-            <p id="model-detail">
-              {model === "quality"
-                ? "Higher quality · moderate memory"
-                : model === "turbo"
-                  ? "High speed & quality · high memory"
-                  : "Quick translations · low memory"}
-            </p>
-          </div>
-        </details>
+              <EllipsisVerticalIcon />
+            </Button>
+          </SheetTrigger>
+          <SheetContent side="bottom" className="max-h-[80dvh]">
+            <SheetHeader>
+              <SheetTitle>Settings</SheetTitle>
+              <SheetDescription>Choose the model used for translations.</SheetDescription>
+            </SheetHeader>
+            <div className="px-4 pb-6">
+              <p className="mb-2 text-sm font-medium">
+                <label htmlFor="model">Model</label>
+              </p>
+              <Select value={model} onValueChange={changeModel}>
+                <SelectTrigger id="model" className="w-full" aria-describedby="model-detail">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="fast">Fast</SelectItem>
+                  <SelectItem value="quality">Quality</SelectItem>
+                  <SelectItem value="turbo">Turbo</SelectItem>
+                </SelectContent>
+              </Select>
+              <p id="model-detail" className="mt-2 text-sm text-muted-foreground">
+                {model === "quality"
+                  ? "Higher quality · moderate memory"
+                  : model === "turbo"
+                    ? "High speed & quality · high memory"
+                    : "Quick translations · low memory"}
+              </p>
+            </div>
+          </SheetContent>
+        </Sheet>
       </div>
 
-      <div className="panels">
-        <section className="panel source-panel" aria-label="Source text">
+      <div className="flex flex-1 flex-col p-3">
+        <section className="relative flex flex-1 flex-col" aria-label="Source text">
           {text !== "" && (
-            <button
+            <Button
               type="button"
-              className="icon-button clear"
+              variant="ghost"
+              size="icon"
+              className="absolute top-1 right-1 z-10 text-muted-foreground"
               aria-label="Clear"
               title="Clear"
               onClick={clearText}
             >
-              <svg viewBox="0 0 24 24" aria-hidden="true">
-                <path d="m6 6 12 12M6 18 18 6" />
-              </svg>
-            </button>
+              <XIcon />
+            </Button>
           )}
-          <textarea
+          <Textarea
             id="source"
             ref={source}
             autoFocus
             dir="auto"
             placeholder="Enter text"
             aria-label="Text to translate"
+            className="min-h-40 flex-1 resize-none border-0 bg-transparent px-2 text-2xl focus-visible:ring-0"
             value={text}
             onChange={changeText}
             onCompositionStart={() => {
@@ -379,7 +419,11 @@ export function Translator() {
           />
           {showCount && (
             <span
-              className={`character-count${charCount > MAX_TEXT_LENGTH ? " over-limit" : ""}`}
+              className={
+                charCount > MAX_TEXT_LENGTH
+                  ? "self-end text-xs text-destructive"
+                  : "self-end text-xs text-muted-foreground"
+              }
             >
               {charCount} / 20,000
             </span>
@@ -387,52 +431,59 @@ export function Translator() {
         </section>
 
         <section
-          className="panel result-panel"
+          className="border-t pt-3"
           aria-label="Translation"
           hidden={phase === "idle"}
           aria-busy={phase === "loading"}
         >
-          <div className="status" role="status" aria-live="polite" aria-atomic="true">
+          <div
+            role="status"
+            aria-live="polite"
+            aria-atomic="true"
+            className="mb-3 text-sm text-muted-foreground empty:hidden"
+          >
             {status}
           </div>
           {error !== "" && (
-            <div className="error" role="alert">
+            <div className="mb-3 text-[0.9375rem] text-destructive" role="alert">
               <p>{error}</p>
-              <button type="button" onClick={schedule}>
+              <Button type="button" variant="link" className="-ml-2" onClick={schedule}>
                 Try again
-              </button>
+              </Button>
             </div>
           )}
           {translated !== "" ? (
             <>
-              <p className="translation" dir="auto" aria-label={`${resultTarget} translation`}>
+              <p
+                dir="auto"
+                aria-label={`${resultTarget} translation`}
+                className="text-2xl leading-normal break-words whitespace-pre-wrap"
+              >
                 {translated}
               </p>
-              <div className="result-actions">
-                <button
+              <div className="mt-3 flex justify-end">
+                <Button
                   type="button"
-                  className="icon-button"
+                  variant="ghost"
+                  size="icon"
                   aria-label="Copy"
                   title="Copy"
                   onClick={copy}
                 >
-                  <svg viewBox="0 0 24 24" aria-hidden="true">
-                    <rect x="8" y="8" width="12" height="13" rx="2" />
-                    <path d="M16 8V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h3" />
-                  </svg>
-                </button>
+                  <CopyIcon />
+                </Button>
               </div>
             </>
           ) : (
             showSkeleton && (
-              <div className="skeleton" aria-hidden="true">
-                <span />
-                <span />
-                <span />
+              <div className="flex flex-col gap-3.5" aria-hidden="true">
+                <Skeleton className="h-3.5 w-full" />
+                <Skeleton className="h-3.5 w-[90%]" />
+                <Skeleton className="h-3.5 w-[65%]" />
               </div>
             )
           )}
-          <p className="copy-status" role="status">
+          <p role="status" className="mt-3 text-xs text-muted-foreground empty:hidden">
             {copyMessage}
           </p>
         </section>
