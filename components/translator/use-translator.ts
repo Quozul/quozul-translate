@@ -20,6 +20,7 @@ import {
   translationResponseBodySchema,
   type TranslationRequestBody,
 } from "@/lib/types";
+import { useVirtualKeyboard } from "./use-virtual-keyboard";
 import type { Phase } from "./types";
 
 const DEFAULT_TARGET = "French";
@@ -53,6 +54,9 @@ export interface TranslatorState {
   error: string;
   /// Feedback for the last copy attempt.
   copyMessage: string;
+  /// True while an on-screen keyboard is up over the source editor. Layout then
+  /// shows the source alone and translation waits for `submit`.
+  keyboardOpen: boolean;
 }
 
 export interface TranslatorActions {
@@ -65,6 +69,11 @@ export interface TranslatorActions {
   endComposition: (value: string) => void;
   clearText: () => void;
   copy: () => void;
+  /// Translate now, skipping the debounce (the keyboard's Go key).
+  submit: () => void;
+  /// Report source editor focus so keyboard mode only applies to it.
+  focusSource: () => void;
+  blurSource: () => void;
   /// Re-run the pipeline for the current inputs (the "Try again" button).
   retry: () => void;
 }
@@ -105,6 +114,8 @@ export function useTranslatorController(): {
   const [phase, setPhase] = useState<Phase>("idle");
   const [error, setError] = useState("");
   const [copyMessage, setCopyMessage] = useState("");
+  const viewportKeyboard = useVirtualKeyboard();
+  const [sourceFocused, setSourceFocused] = useState(false);
 
   const generation = useRef(0);
   const debounce = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -112,6 +123,10 @@ export function useTranslatorController(): {
   const abort = useRef<AbortController | null>(null);
   const composing = useRef(false);
   const usage = useRef<Record<string, number>>({});
+  /// Text typed but not handed to the model yet.
+  const dirty = useRef(false);
+  /// Mirror of `keyboardOpen` for the request pipeline.
+  const keyboardRef = useRef(false);
 
   /// Mirror of the request inputs so async callbacks never read stale state.
   const config = useRef<RequestConfig>({
@@ -170,6 +185,8 @@ export function useTranslatorController(): {
     const controller = new AbortController();
     const request: RequestConfig = { ...config.current };
     const current = generation.current;
+    // Whatever arrives belongs to the newest text on screen.
+    dirty.current = false;
     debounce.current = null;
     abort.current = controller;
     setPhase("loading");
@@ -250,6 +267,7 @@ export function useTranslatorController(): {
     setCopyMessage("");
     const trimmed = config.current.text.trim();
     if (trimmed === "") {
+      dirty.current = false;
       translatedRef.current = "";
       setTranslated("");
       setResultTarget("");
@@ -260,11 +278,42 @@ export function useTranslatorController(): {
       fail("Please shorten your text to 20,000 characters or fewer.");
       return;
     }
+    dirty.current = true;
+    // Keyboard mode: the translation is off screen, so every pause in typing
+    // stays quiet until `submit` runs the request.
+    if (keyboardRef.current) {
+      setPhase("idle");
+      return;
+    }
     setPhase("waiting");
     // Composition is still assembling characters; wait for its end event.
     if (composing.current) return;
     debounce.current = setTimeout(start, DEBOUNCE_MS);
   }, [cancel, fail, start]);
+
+  const submit = useCallback(() => {
+    const trimmed = config.current.text.trim();
+    if (!dirty.current || trimmed === "" || composing.current) return;
+    if ([...trimmed].length > MAX_TEXT_LENGTH) {
+      fail("Please shorten your text to 20,000 characters or fewer.");
+      return;
+    }
+    cancel();
+    setError("");
+    setCopyMessage("");
+    start();
+  }, [cancel, fail, start]);
+
+  const keyboardOpen = viewportKeyboard && sourceFocused;
+
+  useEffect(() => {
+    const wasOpen = keyboardRef.current;
+    keyboardRef.current = keyboardOpen;
+    // Text typed while the keyboard was up is submitted with its Go key; if the
+    // keyboard went away without one nothing else would translate it, so fall
+    // back to the debounce.
+    if (wasOpen && !keyboardOpen && dirty.current) schedule();
+  }, [keyboardOpen, schedule]);
 
   /* eslint-disable react-hooks/set-state-in-effect -- one-time restore of persisted preferences on mount */
   useEffect(() => {
@@ -385,6 +434,14 @@ export function useTranslatorController(): {
     schedule();
   }, [schedule]);
 
+  const focusSource = useCallback(() => {
+    setSourceFocused(true);
+  }, []);
+
+  const blurSource = useCallback(() => {
+    setSourceFocused(false);
+  }, []);
+
   const copy = useCallback(() => {
     const value = translatedRef.current;
     if (value === "") return;
@@ -417,6 +474,9 @@ export function useTranslatorController(): {
       endComposition,
       clearText,
       copy,
+      submit,
+      focusSource,
+      blurSource,
       retry: schedule,
     }),
     [
@@ -429,6 +489,9 @@ export function useTranslatorController(): {
       endComposition,
       clearText,
       copy,
+      submit,
+      focusSource,
+      blurSource,
       schedule,
     ],
   );
@@ -445,6 +508,7 @@ export function useTranslatorController(): {
     phase,
     error,
     copyMessage,
+    keyboardOpen,
   };
 
   return { state, actions };

@@ -1,6 +1,11 @@
 "use client";
 
-import { useRef, type ChangeEvent, type CompositionEvent } from "react";
+import {
+  useRef,
+  type ChangeEvent,
+  type CompositionEvent,
+  type KeyboardEvent,
+} from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { MAX_TEXT_LENGTH } from "@/lib/types";
@@ -10,9 +15,16 @@ import { useTranslatorActions, useTranslatorState } from "./translator-context";
 /// Where the text to translate is typed, with its clear button and the
 /// character counter that appears close to the limit.
 export function SourceEditor() {
-  const { text } = useTranslatorState();
-  const { changeText, startComposition, endComposition, clearText } =
-    useTranslatorActions();
+  const { text, keyboardOpen } = useTranslatorState();
+  const {
+    changeText,
+    startComposition,
+    endComposition,
+    clearText,
+    submit,
+    focusSource,
+    blurSource,
+  } = useTranslatorActions();
   const input = useRef<HTMLTextAreaElement>(null);
 
   const charCount = [...text.trim()].length;
@@ -26,6 +38,18 @@ export function SourceEditor() {
     event: CompositionEvent<HTMLTextAreaElement>,
   ) => {
     endComposition(event.currentTarget.value);
+  };
+
+  const handleKeyDown = (event: KeyboardEvent<HTMLTextAreaElement>) => {
+    // Only the virtual keyboard's Go key submits. A physical keyboard keeps
+    // Enter for newlines and translates on the debounce instead, and Enter
+    // still has to confirm characters being composed.
+    if (!keyboardOpen || event.key !== "Enter" || event.shiftKey) return;
+    if (event.nativeEvent.isComposing) return;
+    event.preventDefault();
+    submit();
+    // Give the screen back to the translation the request produces.
+    input.current?.blur();
   };
 
   const handleClear = () => {
@@ -55,11 +79,15 @@ export function SourceEditor() {
         dir="auto"
         placeholder="Enter text"
         aria-label="Text to translate"
+        enterKeyHint={keyboardOpen ? "go" : "enter"}
         className="min-h-40 flex-1 resize-none border-0 bg-transparent px-2 text-2xl focus-visible:ring-0"
         value={text}
         onChange={handleTextChange}
         onCompositionStart={startComposition}
         onCompositionEnd={handleCompositionEnd}
+        onKeyDown={handleKeyDown}
+        onFocus={focusSource}
+        onBlur={blurSource}
       />
       {showCount && (
         <span

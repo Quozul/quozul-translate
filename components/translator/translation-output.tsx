@@ -8,7 +8,7 @@ import { useTranslatorActions, useTranslatorState } from "./translator-context";
 /// Translation pane: live status line, failures with a retry, the translated
 /// text with its copy button, and a skeleton while there is nothing yet.
 export function TranslationOutput() {
-  const { translated, resultTarget, phase, error, copyMessage } =
+  const { translated, resultTarget, phase, error, copyMessage, keyboardOpen } =
     useTranslatorState();
   const { copy, retry } = useTranslatorActions();
 
@@ -24,9 +24,10 @@ export function TranslationOutput() {
 
   return (
     <section
-      className="min-h-0 overflow-y-auto pt-3"
+      // Off screen while the keyboard is up: the source text keeps it all.
+      className="min-h-0 overflow-y-auto pt-3 md:pt-0"
       aria-label="Translation"
-      hidden={phase === "idle"}
+      hidden={phase === "idle" || keyboardOpen}
       aria-busy={phase === "loading"}
     >
       <div
