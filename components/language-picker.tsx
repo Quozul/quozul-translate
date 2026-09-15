@@ -75,14 +75,26 @@ export function LanguagePicker({
       disabled={disabled}
       items={items}
       filter={() => true}
+      // Base UI only selects on Enter when an item is highlighted, and
+      // it does not highlight while typing by default. Without this, filtering to
+      // "English" then pressing Enter just closes the popup and keeps the old value.
+      autoHighlight
       value={selected}
       onValueChange={(value) => {
         if (typeof value === "string" && value !== "") onSelect(value);
       }}
       inputValue={inputValue}
       onInputValueChange={(value) => setQuery(value)}
-      onOpenChange={(open) => {
-        setQuery(open ? "" : null);
+      onOpenChange={(open, details) => {
+        if (!open) {
+          setQuery(null);
+          return;
+        }
+        // Typing in a closed picker opens the popup after onInputValueChange has
+        // already delivered the typed text, so keep it instead of erasing the
+        // first keystroke.
+        if (details.reason === "input-change") return;
+        setQuery("");
       }}
     >
       <ComboboxInput
