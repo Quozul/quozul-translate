@@ -1,38 +1,34 @@
 "use client";
 
-import { useCallback, useState } from "react";
-
-export interface CopyFeedbackState {
-  text: string;
-  message: string;
-}
+import { toast } from "@/components/ui/toast";
+import { useCallback } from "react";
 
 export interface CopyFeedback {
-  feedback: CopyFeedbackState | null;
   copy: (text: string) => void;
 }
 
 export function useCopyFeedback(): CopyFeedback {
-  const [feedback, setFeedback] = useState<CopyFeedbackState | null>(null);
-
   const copy = useCallback((text: string) => {
     if (text === "") return;
+
     const write =
       window.isSecureContext && navigator.clipboard
         ? navigator.clipboard.writeText(text)
         : Promise.reject();
+
     write
       .then(() => {
-        setFeedback({ text, message: "Copied to clipboard." });
+        toast.add({ title: "Copied to clipboard", type: "success" });
       })
       .catch(() => {
-        setFeedback({
-          text,
-          message:
-            "Could not copy. Select the translation and copy it manually (clipboard access needs HTTPS or localhost).",
+        toast.add({
+          title: "Could not copy",
+          description:
+            "Select the translation and copy it manually.",
+          type: "error",
         });
       });
   }, []);
 
-  return { feedback, copy };
+  return { copy };
 }

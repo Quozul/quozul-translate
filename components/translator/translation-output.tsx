@@ -10,13 +10,11 @@ import { useCopyFeedback } from "./use-clipboard-feedback";
 export function TranslationOutput() {
   const { request, lastSuccess, presentation } = useTranslatorSession();
   const { retry } = useTranslatorActions();
-  const { feedback, copy } = useCopyFeedback();
+  const { copy } = useCopyFeedback();
 
   const translated = lastSuccess?.translation ?? "";
   const resultTarget = lastSuccess?.inputs.target ?? "";
   const resultLanguage = languageByName(resultTarget);
-  const copyMessage =
-    feedback !== null && feedback.text === translated ? feedback.message : "";
   const showPlaceholder = translated === "" && !presentation.showSkeleton;
 
   return (
@@ -89,11 +87,6 @@ export function TranslationOutput() {
         </p>
       )}
 
-      {copyMessage !== "" && (
-        <p role="status" className="mt-3 text-xs text-muted-foreground">
-          {copyMessage}
-        </p>
-      )}
     </section>
   );
 }
