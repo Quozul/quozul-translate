@@ -16,9 +16,27 @@ const buildMilmmtPrompt: PromptBuilder = (sanitized) => {
   return buildAutoDetectPrompt(sanitized);
 };
 
+const buildTranslateGemmaPrompt: PromptBuilder = (sanitized) => {
+  // TranslateGemma's own chat template names both languages and their
+  // language codes in the user turn, so it has no detection mode.
+  if (sanitized.source === null) return buildAutoDetectPrompt(sanitized);
+  const sourceName = promptName(sanitized.source, sanitized.family.id);
+  const targetName = promptName(sanitized.target, sanitized.family.id);
+  return (
+    `You are a professional ${sourceName} (${sanitized.source.code}) to ` +
+    `${targetName} (${sanitized.target.code}) translator. Your goal is to accurately convey the ` +
+    `meaning and nuances of the original ${sourceName} text while adhering to ${targetName} ` +
+    `grammar, vocabulary, and cultural sensitivities.\n` +
+    `Produce only the ${targetName} translation, without any additional explanations or ` +
+    `commentary. Please translate the following ${sourceName} text into ${targetName}:\n\n\n` +
+    `${sanitized.text}`
+  );
+};
+
 const promptBuilders = {
   milmmt: buildMilmmtPrompt,
   "hy-mt2": buildAutoDetectPrompt,
+  translategemma: buildTranslateGemmaPrompt,
 } satisfies Record<ModelFamilyId, PromptBuilder>;
 
 export function buildPrompt(sanitized: SanitizedRequest): string {

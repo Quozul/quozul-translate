@@ -44,18 +44,14 @@ describe("resolveRequest", () => {
     expect(resolved.source).toBeNull();
   });
 
-  it("reports no family when only the user-selected order cannot serve an explicit source", () => {
-    // Ukrainian is only known to Hy-MT2, which cannot honour explicit sources.
-    let caught: unknown;
-    try {
-      resolveRequest(
-        request({ family: "hy-mt2", source: "Ukrainian", target: "French" }),
-      );
-    } catch (error) {
-      caught = error;
-    }
-    expect(caught).toBeInstanceOf(ApiError);
-    expect((caught as ApiError).code).toBe("UNSUPPORTED_LANGUAGE_PAIR");
+  it("falls back to the required-source family that knows an explicit source", () => {
+    // Ukrainian is not in MiLMMT, so TranslateGemma is the only family that
+    // can name an explicit Ukrainian source.
+    const resolved = resolveRequest(
+      request({ family: "hy-mt2", source: "Ukrainian", target: "French" }),
+    );
+    expect(resolved.family.id).toBe("translategemma");
+    expect(resolved.model).toBe("local/translategemma-12b-it");
   });
 
   it("normalizes CRLF and trims outer whitespace", () => {
@@ -130,6 +126,25 @@ describe("buildPrompt", () => {
     const prompt = buildPrompt(sanitized);
     expect(prompt).toContain("Translate the following text into French");
     expect(prompt).toContain("hello world");
+  });
+
+  it("names both languages with their codes for TranslateGemma", () => {
+    const sanitized = resolveRequest(
+      request({
+        family: "translategemma",
+        source: "English",
+        target: "Khmer",
+      }),
+    );
+    expect(sanitized.family.id).toBe("translategemma");
+    const prompt = buildPrompt(sanitized);
+    expect(prompt).toContain(
+      "professional English (en) to Central Khmer (km)",
+    );
+    expect(prompt).toContain(
+      "Please translate the following English text into Central Khmer:",
+    );
+    expect(prompt.endsWith("\n\n\nhello world")).toBe(true);
   });
 
   it("applies per-family prompt name overrides", () => {
