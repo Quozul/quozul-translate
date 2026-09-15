@@ -26,7 +26,6 @@ function succeed(
   inputs: Partial<TranslatorInputs> = {},
 ): TranslatorState {
   if (state.request.status !== "loading") {
-    // Drive to loading first, mirroring the coordinator's order.
     state = translatorReducer(state, { type: "requestStarted", requestId });
   }
   return translatorReducer(state, {
@@ -88,7 +87,6 @@ describe("translator reducer — invariants", () => {
     });
     expect(state.request).toEqual({ status: "ready" });
     expect(state.lastSuccess?.translation).toBe("bonjour");
-    // Tied to the inputs that produced it.
     expect(state.lastSuccess?.inputs.text).toBe("hello");
   });
 
@@ -157,7 +155,6 @@ describe("translator reducer — keyboard and composition scheduling", () => {
       requestId: 1,
       error: "boom",
     });
-    // Simulate keyboard open/close without an intervening edit.
     state = translatorReducer(state, { type: "keyboardOpened" });
     state = translatorReducer(state, { type: "keyboardClosed" });
     expect(state.request).toEqual({ status: "failed", error: "boom" });

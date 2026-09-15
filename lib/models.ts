@@ -1,31 +1,18 @@
-/// Source language value meaning "let the model detect the language".
 export const DETECT_SOURCE = "detect";
 
-/// Public preset keys, ordered from cheapest to best.
 export const MODEL_PRESETS = ["turbo", "balanced", "quality"] as const;
 export type ModelPreset = (typeof MODEL_PRESETS)[number];
 
-/// Whether a family needs an explicit source language.
-///
-/// - `"required"` — the prompt names the source language; requests without
-///   one are only served after falling back to an auto-detecting family.
-/// - `"automatic"` — the family always detects the source itself, so the UI
-///   locks the source picker on detection.
 export type SourcePolicy = "required" | "automatic";
 
 interface ModelFamilyDefinition {
   readonly id: string;
-  /// Display name shown in the UI.
   readonly name: string;
   readonly sourcePolicy: SourcePolicy;
-  /// Concrete model IDs, resolved on the server.
   readonly models: Readonly<Record<ModelPreset, string>>;
-  /// Language codes supported by this family.
   readonly languages: readonly string[];
 }
 
-/// The registry: model-specific behavior (source policy, prompt capabilities,
-/// model IDs) lives here as data, keyed by nothing the UI has to remember.
 const FAMILIES = [
   {
     id: "milmmt",
@@ -137,15 +124,10 @@ const FAMILIES = [
   },
 ] as const satisfies readonly ModelFamilyDefinition[];
 
-/// Entry of the family registry.
 export type ModelFamily = (typeof FAMILIES)[number];
 
-/// Model family identifiers, derived from the registry keys.
 export type ModelFamilyId = ModelFamily["id"];
 
-/// Ordered by preference: the selected family is tried first, then the
-/// remaining families in this order when the current model does not support
-/// the chosen languages.
 export const MODEL_FAMILIES: readonly ModelFamily[] = FAMILIES;
 
 export const DEFAULT_FAMILY: ModelFamilyId = "milmmt";
@@ -159,8 +141,6 @@ export function isModelPreset(value: string): value is ModelPreset {
   return (MODEL_PRESETS as readonly string[]).includes(value);
 }
 
-/// Cross-field rule, applied in one place by both the reducer and the
-/// preference parser: auto-detecting families never take an explicit source.
 export function applyFamilySourcePolicy(
   source: string,
   family: ModelFamily,
@@ -178,13 +158,9 @@ export function familySupports(
   if (family.sourcePolicy === "required") {
     return source !== null && languages.includes(source);
   }
-  // Auto-detecting families handle any source language.
   return true;
 }
 
-/// Returns the family that supports the language pair, trying the selected
-/// family first and falling back by registry preference. `null` means no
-/// model that can handle the request is configured.
 export function resolveFamily(
   selected: ModelFamilyId,
   source: string | null,

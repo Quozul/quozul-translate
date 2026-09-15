@@ -7,8 +7,6 @@ import { translationCache, type TranslationCache } from "./translation-cache";
 
 export interface TranslateOutcome {
   translation: string;
-  /// Family that actually ran; surfaced so clients can show what was used
-  /// even on cache hits.
   family: SanitizedRequest["family"];
   fromCache: boolean;
 }
@@ -16,15 +14,10 @@ export interface TranslateOutcome {
 export interface TranslateOptions {
   completion: ModelCompletion;
   signal?: AbortSignal;
-  /// Injectable clock so TTL behavior is testable.
   now?: () => number;
-  /// Injectable cache; defaults to the process-wide instance.
   cache?: TranslationCache;
 }
 
-/// Full request pipeline: resolve policy, consult cache, prompt, run,
-/// validate, cache. Provider interaction is the injected `completion` seam,
-/// so this module runs in tests without the OpenAI SDK or a network.
 export async function translateRequest(
   body: TranslationRequestBody,
   options: TranslateOptions,

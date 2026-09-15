@@ -65,7 +65,6 @@ describe("getLanguageGroups", () => {
       frequent: ["German", "Japanese"],
     });
     expect(groups.frequent.map((l) => l.name)).toEqual(["Japanese"]);
-    // The matched language appears in exactly one group (deduplicated).
     expect(groups.others.map((l) => l.name)).not.toContain("Japanese");
     expect(groups.others.map((l) => l.name)).not.toContain("French");
   });

@@ -63,7 +63,6 @@ function makeHarness(deadlineMs = 90_000) {
   return { engine, sent, results, failures };
 }
 
-/** Flush queued promise callbacks (the `.then` chain after `send`). */
 async function flush() {
   for (let i = 0; i < 8; i += 1) await Promise.resolve();
 }
@@ -83,14 +82,12 @@ describe("translation engine request ownership", () => {
     engine.start(2, bodyFor("new", "German"));
     expect(sent).toHaveLength(2);
 
-    // Request A resolves its body last — after B has already committed.
     sent[1].completion.resolve("NEU");
     await flush();
     expect(results).toEqual([{ id: 2, target: "German", translation: "NEU" }]);
 
     sent[0].completion.resolve("OLD");
     await flush();
-    // A must not overwrite, duplicate-commit, or attribute usage.
     expect(results).toHaveLength(1);
   });
 
@@ -120,7 +117,6 @@ describe("translation engine request ownership", () => {
     await flush();
     expect(failures).toHaveLength(1);
     expect(failures[0]?.error).toMatch(/took too long/);
-    // A body that finishes after the deadline is dropped, not committed.
     sent[0].completion.resolve("too slow");
     await flush();
     expect(results).toHaveLength(0);
@@ -167,7 +163,6 @@ describe("translation engine request ownership", () => {
     const { engine, sent, results } = makeHarness();
     engine.start(1, bodyFor("A"));
     engine.start(2, bodyFor("B"));
-    // Old request rejects after the new one started.
     sent[0].completion.reject(new TranslationFailure("old failed"));
     sent[1].completion.resolve("B!");
     await flush();

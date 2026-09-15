@@ -17,10 +17,6 @@ export function Translator() {
   );
 }
 
-/// Source text only while there is nothing to compare with; once a result
-/// is on screen the panes sit side by side where there is horizontal room
-/// and stacked where there is not. Layout derives from the presentation
-/// selector, never from an overloaded `idle` flag.
 function TranslatorPanes() {
   const { presentation } = useTranslatorSession();
   return (

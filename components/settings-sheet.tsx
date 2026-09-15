@@ -39,8 +39,6 @@ const PRESET_DETAILS: Record<ModelPreset, string> = {
 };
 
 interface SettingsSheetProps {
-  /// Optional for external control; uncontrolled (primitive-managed) by
-  /// default so callers that only toggle via the trigger need no state.
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
   family: ModelFamilyId;

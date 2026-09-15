@@ -9,19 +9,13 @@ import {
 } from "./translator-context";
 import { TranslatorSettings } from "./translator-settings";
 
-/// Stable identity so the picker's memoized grouping is not invalidated on
-/// every parent render.
 const DETECT_OPTION = { value: DETECT_SOURCE, label: "Detect language" };
 
-/// Header row: source → target languages and the model settings trigger.
-/// Hidden while the keyboard is up, which leaves the source text the screen.
 export function LanguageBar() {
   const { source, target, family, frequent } = useTranslatorPreferences();
   const { keyboardOpen } = useTranslatorEditor();
   const { changeSource, chooseLanguage } = useTranslatorActions();
 
-  // Families that always auto-detect keep the source input locked on
-  // detection — a capability read straight from the registry.
   const sourceSelectable = familyById(family)?.sourcePolicy === "required";
 
   return (

@@ -4,13 +4,9 @@ export interface Language {
   name: string;
   native: string;
   code: string;
-  /// Name sent to a specific model family when it differs from the display
-  /// name (e.g. MiLMMT expects "Tagalog" while Hy-MT2 expects "Filipino").
   promptNames?: Partial<Record<ModelFamilyId, string>>;
 }
 
-/// English name (also used by the API), native name, and language code.
-/// The union of all model family languages (see lib/models.ts).
 export const LANGUAGES: Language[] = [
   { name: "Arabic", native: "العربية", code: "ar" },
   { name: "Azerbaijani", native: "Azərbaycan dili", code: "az" },
@@ -84,14 +80,10 @@ export function languageByName(name: string): Language | undefined {
   return LANGUAGE_BY_NAME.get(name);
 }
 
-/// Queries are trimmed and lowercased once per search, not per candidate.
 export function normalizeLanguageQuery(query: string): string {
   return query.trim().toLowerCase();
 }
 
-/// Match against an already-normalized query. A query that is exactly one
-/// full language code selects only that language — `"ja"` matches Japanese,
-/// not also Gujarati.
 export function matchesNormalizedLanguage(
   language: Language,
   normalizedQuery: string,
@@ -108,12 +100,10 @@ export function matchesLanguage(language: Language, query: string): boolean {
   return matchesNormalizedLanguage(language, normalizeLanguageQuery(query));
 }
 
-/// The name to use when prompting a specific model family.
 export function promptName(language: Language, family: ModelFamilyId): string {
   return language.promptNames?.[family] ?? language.name;
 }
 
-/// The maximum number of "Frequently used" entries shown by pickers.
 export const FREQUENT_LANGUAGE_LIMIT = 3;
 
 export interface DetectionOption {
@@ -122,17 +112,11 @@ export interface DetectionOption {
 }
 
 export interface LanguageGroups {
-  /// The detection pseudo-language, present when it matches the query.
   detection: DetectionOption | null;
-  /// Recently translated languages, most-used first.
   frequent: Language[];
-  /// Everything else, in catalog order.
   others: Language[];
 }
 
-/// The one language grouping/filtering policy: the picker renders exactly
-/// what this returns, so displayed items, keyboard navigation, and the
-/// empty state can never disagree with another filter.
 export function getLanguageGroups(options: {
   query: string;
   frequent: readonly string[];

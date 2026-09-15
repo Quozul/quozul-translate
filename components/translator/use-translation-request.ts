@@ -8,8 +8,6 @@ import {
 } from "@/lib/translation-client";
 import type { TranslationRequestBody } from "@/lib/translation-contract";
 
-/// Give up on a request that never answers. The deadline stays armed until
-/// the response body is fully read and validated.
 export const REQUEST_DEADLINE_MS = 90_000;
 
 const TIMEOUT_MESSAGE =
@@ -17,17 +15,11 @@ const TIMEOUT_MESSAGE =
 const UNKNOWN_MESSAGE = "Translation failed. Please try again.";
 
 export interface TranslationEngine {
-  /// Aborts any active request and starts a new one from an immutable
-  /// input snapshot.
   start: (requestId: number, body: TranslationRequestBody) => void;
-  /// Aborts the active request without starting another one.
   cancel: () => void;
 }
 
 export interface EngineHandlers {
-  /// Called only while the request is still the current one — checked
-  /// synchronously after the body settles — so a late response can never
-  /// overwrite newer state, track usage, or clear under a newer request.
   onResult: (
     requestId: number,
     body: TranslationRequestBody,
@@ -41,14 +33,10 @@ export interface EngineHandlers {
 }
 
 export interface EngineOptions extends Partial<EngineHandlers> {
-  /// Transport seam; tests inject a fake whose body resolves on demand.
   send?: (body: TranslationRequestBody, signal: AbortSignal) => Promise<string>;
   deadlineMs?: number;
 }
 
-/// Owns one request's lifecycle resources — ownership token, abort
-/// controller, deadline — with no React in sight, so the race behavior is
-/// directly testable.
 export function createTranslationEngine(
   options: Required<Pick<EngineHandlers, "onResult" | "onFailure">> &
     EngineOptions,
@@ -74,8 +62,6 @@ export function createTranslationEngine(
     const isCurrent = () => active === request;
 
     let deadline: ReturnType<typeof setTimeout> | null = setTimeout(() => {
-      // Invalidate the request as well as reporting it, so nothing late
-      // from this fetch can commit.
       controller.abort();
       fail(TIMEOUT_MESSAGE);
     }, deadlineMs);
@@ -94,8 +80,6 @@ export function createTranslationEngine(
     send(body, controller.signal).then(
       (translation) => {
         clearDeadline();
-        // The vulnerable boundary: a response whose body resolved after
-        // newer input arrived is dropped here, before any mutation.
         if (!isCurrent()) return;
         active = null;
         options.onResult(requestId, body, translation);
@@ -103,7 +87,6 @@ export function createTranslationEngine(
       (error: unknown) => {
         clearDeadline();
         if (!isCurrent()) return;
-        // Intentional cancellation is silent, not a failure.
         if (isAbortError(error)) return;
         if (error instanceof TranslationFailure) {
           fail(error.message);
@@ -117,11 +100,6 @@ export function createTranslationEngine(
   return { start, cancel };
 }
 
-/// React wrapper around the engine. Handlers must keep a stable identity
-/// (they do in the coordinator: memoized callbacks over stable deps) —
-/// swapping them mid-request would orphan the in-flight ownership chain.
-/// Even then, the reducer's request-ID guard ignores results from a
-/// superseded engine, so stale data can never commit.
 export function useTranslationRequest(
   onResult: EngineHandlers["onResult"],
   onFailure: EngineHandlers["onFailure"],
@@ -131,7 +109,6 @@ export function useTranslationRequest(
     [onResult, onFailure],
   );
 
-  // No in-flight request outlives the component.
   useEffect(() => () => engine.cancel(), [engine]);
 
   return engine;

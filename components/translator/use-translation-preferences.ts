@@ -11,9 +11,6 @@ import {
 } from "@/lib/preferences";
 import type { TranslatorInputs } from "./translator-state";
 
-/// Preference restoration, persistence, and usage counting. All browser
-/// storage access lives here; decoding and validation are delegated to the
-/// pure layer in `lib/preferences.ts`.
 export function usePreferenceStore() {
   const usageRef = useRef<Record<string, number>>({});
 
@@ -36,8 +33,6 @@ export function usePreferenceStore() {
     });
   }, []);
 
-  /// Count one completed translation (cache hits included, not picker
-  /// browsing) and return the refreshed frequent list.
   const recordTranslation = useCallback((target: string): string[] => {
     usageRef.current = {
       ...usageRef.current,
@@ -52,7 +47,6 @@ export function usePreferenceStore() {
     [],
   );
 
-  // Stable identity so effects can depend on it safely.
   return useMemo(
     () => ({ restore, persist, recordTranslation, frequent }),
     [restore, persist, recordTranslation, frequent],

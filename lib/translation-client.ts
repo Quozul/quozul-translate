@@ -3,20 +3,12 @@ import {
   type TranslationRequestBody,
 } from "./translation-contract";
 
-// Client-only module: it is loaded from `"use client"` code paths and uses
-// `fetch` against the app's own API. Next.js still evaluates Client
-// Component modules during server prerendering, so this boundary is a
-// convention (enforced by review and the build) rather than an import-time
-// side effect — nothing at module scope may touch browser globals.
-
-/// A request failure whose `message` is already user-facing copy.
 export class TranslationFailure extends Error {}
 
 export function isAbortError(error: unknown): boolean {
   return error instanceof DOMException && error.name === "AbortError";
 }
 
-/// Turn an HTTP status into copy the user can act on.
 function statusMessage(status: number): string {
   switch (status) {
     case 400:
@@ -38,12 +30,6 @@ async function readJson(response: Response): Promise<unknown> {
   }
 }
 
-/// Perform one translation request end to end: fetch, parse, validate, and
-/// return the completed translation. Consuming the response body is part of
-/// the returned promise, so the caller's deadline covers it.
-///
-/// Throws `TranslationFailure` for user-presentable errors and propagates
-/// `AbortError` when the signal aborts (including mid-body).
 export async function requestTranslation(
   body: TranslationRequestBody,
   signal: AbortSignal,
@@ -80,8 +66,6 @@ export async function requestTranslation(
   try {
     json = await response.json();
   } catch (error) {
-    // An abort while consuming the body is a cancellation, not a
-    // malformed response; the caller's ownership rules handle it.
     if (isAbortError(error)) throw error;
     throw new TranslationFailure("Invalid translation response.");
   }

@@ -1,10 +1,6 @@
 "use client"
 
 import * as React from "react"
-// Primitive stack note: this control is built on Base UI
-// (@base-ui/react, `render` convention); every other primitive in ui/ wraps
-// radix-ui (Radix, `asChild` convention). Consolidating onto one library is
-// a deliberate future migration — see README “Primitive stack”.
 import { Combobox as ComboboxPrimitive } from "@base-ui/react"
 import { cn } from "@/lib/utils"
 

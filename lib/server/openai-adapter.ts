@@ -5,10 +5,6 @@ import { ApiError } from "./errors";
 export const DEFAULT_BASE_URL = "http://127.0.0.1:9931/v1";
 export const REQUEST_TIMEOUT_MS = 85_000;
 
-/// The one dependency seam to the external model provider. Application
-/// policy is tested against a fake completion function and never needs the
-/// OpenAI SDK. Real and fake adapters must obey the same contract: resolve
-/// with text, reject with an error, and honor the abort signal.
 export interface ModelCompletionInput {
   model: string;
   prompt: string;
@@ -19,8 +15,6 @@ export type ModelCompletion = (
   signal?: AbortSignal,
 ) => Promise<string>;
 
-/// Build the production adapter from environment configuration. Throws an
-/// `ApiError` (503) when the server is not configured.
 export function createCompletionFromEnvironment(): ModelCompletion {
   const apiKey = process.env.OPENAI_API_KEY;
   if (!apiKey) {
@@ -51,7 +45,6 @@ export function createCompletionFromEnvironment(): ModelCompletion {
         });
       }
       if (signal?.aborted) {
-        // Cancellation is not a failure of the request itself.
         throw error;
       }
       throw new ApiError("MODEL_UNAVAILABLE", 502, "The model could not translate this text.", {

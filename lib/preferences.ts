@@ -13,20 +13,14 @@ import { languageByName, LANGUAGES } from "./languages";
 
 const PREFERENCES_KEY = "qzl.preferences.v1";
 
-/// Trustworthy domain shape: after parsing, every field is valid and
-/// mutually consistent. Application code never re-validates it.
 export interface Preferences {
   target: string;
-  /// Source language name or `DETECT_SOURCE`.
   source: string;
   family: ModelFamilyId;
   preset: ModelPreset;
-  /// Translations completed per target language, known languages only.
   usage: Record<string, number>;
 }
 
-/// Minimal storage seams so parsing and persistence are testable without a
-/// browser.
 export interface StorageReader {
   getItem(key: string): string | null;
 }
@@ -35,19 +29,15 @@ export interface StorageWriter {
   setItem(key: string, value: string): void;
 }
 
-/// Shape stored in localStorage. Storage-specific names (`translation_usage`)
-/// live only at this serialization boundary; the domain uses `usage`.
 interface StoredPreferences {
   target?: unknown;
   source?: unknown;
   family?: unknown;
   preset?: unknown;
   translation_usage?: unknown;
-  /// Older preferences stored a single `model` key naming Hy-MT2 sizes.
   model?: unknown;
 }
 
-/// Earlier preferences stored a single `model` key naming Hy-MT2 sizes.
 const LEGACY_MODELS: Record<string, { family: ModelFamilyId; preset: ModelPreset }> =
   {
     fast: { family: "hy-mt2", preset: "turbo" },
@@ -71,7 +61,6 @@ function parseUsage(value: unknown): Record<string, number> {
     return usage;
   }
   for (const [name, count] of Object.entries(value)) {
-    // Keep only known languages with finite, non-negative integer counts.
     if (!languageByName(name)) continue;
     if (typeof count !== "number") continue;
     if (!Number.isSafeInteger(count) || count < 0) continue;
@@ -80,9 +69,6 @@ function parseUsage(value: unknown): Record<string, number> {
   return usage;
 }
 
-/// Decode unknown JSON into trustworthy preferences, migrating legacy keys.
-/// Invalid individual fields fall back to their defaults while valid ones are
-/// kept. Never throws.
 export function parseTranslationPreferences(value: unknown): Preferences {
   const fallback = fallbackPreferences();
   if (typeof value !== "object" || value === null || Array.isArray(value)) {
@@ -124,15 +110,12 @@ export function parseTranslationPreferences(value: unknown): Preferences {
   family = family ?? fallback.family;
   preset = preset ?? fallback.preset;
 
-  // Family/source cross-field rule lives in exactly one shared place.
   const familyEntry = familyById(family);
   if (familyEntry) source = applyFamilySourcePolicy(source, familyEntry);
 
   return { target, source, family, preset, usage: parseUsage(stored.translation_usage) };
 }
 
-/// Read persisted preferences. `null` storage (SSR, disabled storage) and
-/// unreadable or malformed contents fall back to defaults. Never throws.
 export function loadTranslationPreferences(
   storage: StorageReader | null,
 ): Preferences {
@@ -146,8 +129,6 @@ export function loadTranslationPreferences(
   }
 }
 
-/// Persist preferences. Storage errors are ignored: preferences simply will
-/// not survive the session.
 export function saveTranslationPreferences(
   storage: StorageWriter | null,
   preferences: Preferences,
@@ -163,12 +144,9 @@ export function saveTranslationPreferences(
   try {
     storage.setItem(PREFERENCES_KEY, JSON.stringify(stored));
   } catch {
-    // Storage may be unavailable; preferences simply will not persist.
   }
 }
 
-/// Rank target languages by completed translations: most-used first, ties
-/// alphabetical, known languages only. Derived — callers never store it.
 export function getFrequentLanguages(
   usage: Readonly<Record<string, number>>,
   limit: number,
@@ -182,8 +160,6 @@ export function getFrequentLanguages(
   return languages.slice(0, limit);
 }
 
-/// The browser storage seam: `null` during prerendering or when storage is
-/// blocked (Safari private mode throws on access, not only on use).
 export function browserStorage(): (StorageReader & StorageWriter) | null {
   try {
     if (typeof window === "undefined") return null;

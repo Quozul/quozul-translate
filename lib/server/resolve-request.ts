@@ -13,20 +13,14 @@ import type { TranslationRequestBody } from "../translation-contract";
 import { ApiError } from "./errors";
 import type { CacheKey } from "./translation-cache";
 
-/// Validated request with every reference resolved to domain objects.
 export interface SanitizedRequest {
   text: string;
-  /// `null` means the source language is detected automatically.
   source: Language | null;
   target: Language;
-  /// The family that will actually run; may differ from the requested one
-  /// when the requested family does not support the language pair.
   family: ModelFamily;
   model: string;
 }
 
-/// Turn a schema-valid wire body into a `SanitizedRequest`, enforcing text
-/// policy through the shared `validateTranslationInput`.
 export function resolveRequest(body: TranslationRequestBody): SanitizedRequest {
   const text = normalizeTranslationText(body.text);
   const issue = validateTranslationInput(text);
@@ -66,12 +60,9 @@ export function resolveRequest(body: TranslationRequestBody): SanitizedRequest {
     );
   }
 
-  // `body.preset` is a registry key per the shared contract schema.
   return { text, source, target, family, model: family.models[body.preset] };
 }
 
-/// The cache key for a resolved request, constructed beside resolution so
-/// key fields can never drift from what the model actually saw.
 export function cacheKeyFor(sanitized: SanitizedRequest): CacheKey {
   return {
     text: sanitized.text,

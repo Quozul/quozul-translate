@@ -5,8 +5,6 @@ export default defineConfig({
   resolve: {
     alias: {
       "@": path.resolve(import.meta.dirname),
-      // Server modules assert with `import "server-only"`; tests exercise
-      // their pure logic under Node, so the marker is neutralized here.
       "server-only": path.resolve(import.meta.dirname, "tests/stubs/server-only.ts"),
     },
   },

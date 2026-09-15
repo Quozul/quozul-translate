@@ -93,7 +93,6 @@ describe("requestTranslation", () => {
   });
 
   it("propagates AbortError raised while consuming the body", async () => {
-    // Headers arrived; the body stalls until the signal aborts it.
     const stalledBody = new Promise<never>((_, reject) => {
       setTimeout(() => {
         const error = new DOMException("aborted", "AbortError");

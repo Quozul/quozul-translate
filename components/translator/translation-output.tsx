@@ -7,10 +7,6 @@ import { CopyIcon } from "lucide-react";
 import { useTranslatorActions, useTranslatorSession } from "./translator-context";
 import { useCopyFeedback } from "./use-clipboard-feedback";
 
-/// Translation pane: live status line, failures with a retry, the translated
-/// text with its copy button, and a skeleton while there is nothing yet.
-/// Presentation comes from the session selector; copy feedback is owned
-/// here, associated with the copied text so it cannot stick to a newer one.
 export function TranslationOutput() {
   const { request, lastSuccess, presentation } = useTranslatorSession();
   const { retry } = useTranslatorActions();
@@ -24,7 +20,6 @@ export function TranslationOutput() {
 
   return (
     <section
-      // Off screen while the keyboard is up: the source text keeps it all.
       className="min-h-0 overflow-y-auto pt-3 md:pt-0"
       aria-label="Translation"
       hidden={presentation.outputHidden}

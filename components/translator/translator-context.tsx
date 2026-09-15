@@ -9,10 +9,6 @@ import {
   type TranslatorSessionSlice,
 } from "./use-translator";
 
-/// Context is split into cohesive slices with stable identities per slice:
-/// typing invalidates only the editor slice, copy feedback is not even in
-/// here, and model preferences keep their identity while text changes.
-/// Actions never change identity at all.
 const TranslatorPreferencesContext =
   createContext<TranslatorPreferencesSlice | null>(null);
 const TranslatorEditorContext =

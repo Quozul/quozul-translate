@@ -13,8 +13,6 @@ import {
 
 const LIMIT_LABEL = MAX_TEXT_LENGTH.toLocaleString("en-US");
 
-/// Where the text to translate is typed, with its clear button and the
-/// character counter that appears close to the limit.
 export function SourceEditor() {
   const { text, keyboardOpen } = useTranslatorEditor();
   const {
@@ -28,7 +26,6 @@ export function SourceEditor() {
   } = useTranslatorActions();
   const input = useRef<HTMLTextAreaElement>(null);
 
-  // Same counting semantics the server enforces: normalized, code points.
   const charCount = displayedCharacterCount(text);
   const tooLong = charCount > MAX_TEXT_LENGTH;
   const showCount = charCount > MAX_TEXT_LENGTH - 1000;
@@ -44,14 +41,10 @@ export function SourceEditor() {
   };
 
   const handleKeyDown = (event: KeyboardEvent<HTMLTextAreaElement>) => {
-    // Only the virtual keyboard's Go key submits. A physical keyboard keeps
-    // Enter for newlines and translates on debounce instead, and Enter can
-    // still confirm composed characters.
     if (!keyboardOpen || event.key !== "Enter" || event.shiftKey) return;
     if (event.nativeEvent.isComposing) return;
     event.preventDefault();
     submit();
-    // Give the screen back to the translation the request produces.
     input.current?.blur();
   };
 

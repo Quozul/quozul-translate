@@ -18,7 +18,6 @@ function request(overrides: Partial<TranslationRequestBody> = {}): TranslationRe
 describe("resolveRequest", () => {
   it("normalizes text and falls back to an auto-detect family for detection", () => {
     const resolved = resolveRequest(request({ source: "detect" }));
-    // MiLMMT needs an explicit source; with none, Hy-MT2 must serve.
     expect(resolved.family.id).toBe("hy-mt2");
     expect(resolved.source).toBeNull();
   });
@@ -67,8 +66,6 @@ describe("resolveRequest", () => {
   it("reports an unsupported pair when no family can serve", () => {
     let caught: unknown;
     try {
-      // Bulgarian is only served by the required-source family, and
-      // detection provides no source to qualify for it.
       resolveRequest(request({ source: "detect", target: "Bulgarian" }));
     } catch (error) {
       caught = error;
@@ -108,7 +105,6 @@ describe("buildPrompt", () => {
   });
 
   it("applies per-family prompt name overrides", () => {
-    // Filipino is "Tagalog" for MiLMMT prompt construction.
     const sanitized = resolveRequest(
       request({ source: "English", target: "Filipino", family: "milmmt" }),
     );

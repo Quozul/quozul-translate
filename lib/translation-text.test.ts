@@ -23,13 +23,11 @@ describe("normalizeTranslationText", () => {
 
 describe("countTranslationCharacters", () => {
   it("counts Unicode code points, not UTF-16 units", () => {
-    // Emoji outside the BMP: one code point, two UTF-16 units.
     expect(countTranslationCharacters("😀")).toBe(1);
     expect("😀".length).toBe(2);
   });
 
   it("counts combining sequences as base + marks (documented behavior)", () => {
-    // "e" + combining acute: two code points under this policy.
     expect(countTranslationCharacters("e\u0301")).toBe(2);
   });
 
@@ -53,7 +51,6 @@ describe("validateTranslationInput", () => {
   });
 
   it("counts code points, not UTF-16 units, against the limit", () => {
-    // 10,001 emoji are 20,002 UTF-16 units but only 10,001 code points.
     const emoji = "😀".repeat(10_001);
     expect(validateTranslationInput(emoji)).toBeNull();
   });

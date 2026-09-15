@@ -3,7 +3,6 @@
 import { useCallback, useState } from "react";
 
 export interface CopyFeedbackState {
-  /// The exact text this feedback belongs to.
   text: string;
   message: string;
 }
@@ -13,10 +12,6 @@ export interface CopyFeedback {
   copy: (text: string) => void;
 }
 
-/// Clipboard write plus feedback associated with the copied text itself:
-/// a "Copied" message from an earlier result can never appear against a
-/// newer translation, because callers show it only while
-/// `feedback.text === translated`. No timers, no refs, no shared state.
 export function useCopyFeedback(): CopyFeedback {
   const [feedback, setFeedback] = useState<CopyFeedbackState | null>(null);
 

@@ -38,7 +38,6 @@ describe("translation cache", () => {
     cache.insert(key({ text: "one" }), "1", 0);
     cache.insert(key({ text: "two" }), "2", 0);
     cache.insert(key({ text: "three" }), "3", 0);
-    // Reading must not refresh insertion order: "two" stays, "one" is gone.
     cache.get(key({ text: "two" }), 0);
     cache.insert(key({ text: "four" }), "4", 0);
     expect(cache.get(key({ text: "one" }), 0)).toBeUndefined();
@@ -60,9 +59,6 @@ describe("translation cache", () => {
   });
 
   it("recomputes byte accounting on replace (no ghost bytes)", () => {
-    // Entry bytes: text + source(7) + target(6) + model(1) + translation.
-    // "one" + "longer" = 17 + 6 = 23; shrunk to "x" = 18. "two" + "z" = 18.
-    // Budget 36 fits the two entries only if replace subtracted 23.
     const cache = createTranslationCache({
       maxBytes: 36,
       maxEntries: 100,

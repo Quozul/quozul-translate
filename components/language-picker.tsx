@@ -21,13 +21,8 @@ interface LanguagePickerProps {
   selected: string;
   frequent: string[];
   onSelect: (name: string) => void;
-  /// Accessible name of the field.
   ariaLabel?: string;
-  /// Pseudo-language offered before the real languages, such as "Detect
-  /// language" in the source picker. A `selected` equal to its value shows
-  /// its label instead.
   detect?: DetectionOption;
-  /// Locks the picker, for models that detect the source on their own.
   disabled?: boolean;
 }
 
@@ -53,7 +48,6 @@ export function LanguagePicker({
   detect,
   disabled = false,
 }: LanguagePickerProps) {
-  // `null` means "no active query": the input displays the selected language.
   const [query, setQuery] = useState<string | null>(null);
   const detectValue = detect?.value;
   const detectLabel = detect?.label ?? "";
@@ -63,10 +57,6 @@ export function LanguagePicker({
       : selected;
   const inputValue = query ?? selectedLabel;
 
-  // One owner for grouping and matching (see `getLanguageGroups`): the
-  // rendered groups are the filtered collection, so the primitive's
-  // keyboard navigation, selection, and empty state can never drift from
-  // what is displayed.
   const groups = useMemo(
     () => getLanguageGroups({ query: query ?? "", frequent, detection: detect }),
     [query, frequent, detect],
@@ -84,8 +74,6 @@ export function LanguagePicker({
     <Combobox
       disabled={disabled}
       items={items}
-      // The groups already applied the single filtering policy; a second
-      // filter here would duplicate that reasoning.
       filter={() => true}
       value={selected}
       onValueChange={(value) => {

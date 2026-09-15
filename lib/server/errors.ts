@@ -1,5 +1,3 @@
-/// Small translation-specific error contract. The client maps codes
-/// consistently instead of relying on server wording alone.
 export type TranslationErrorCode =
   | "INVALID_INPUT"
   | "TEXT_TOO_LONG"

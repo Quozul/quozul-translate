@@ -7,7 +7,6 @@ const DEFAULT_MAX_BYTES = 16 * 1024 * 1024;
 
 export interface CacheKey {
   text: string;
-  /// Source language name; empty string means detection.
   source: string;
   target: string;
   model: string;
@@ -38,9 +37,6 @@ function keyToString(key: CacheKey): string {
     .digest("hex");
 }
 
-/// Estimates an entry's retained size. The hashed map key is deliberately
-/// not counted: it is a fixed-length digest, and the byte budget is an
-/// application estimate, not exact allocator accounting.
 function entryBytes(key: CacheKey, translation: string): number {
   return (
     Buffer.byteLength(key.text) +
@@ -51,13 +47,6 @@ function entryBytes(key: CacheKey, translation: string): number {
   );
 }
 
-/// Process-local translation cache with TTL, entry-count and byte budgets.
-/// Eviction is FIFO — the oldest inserted entry goes first. Reads do not
-/// refresh insertion order, so this is not LRU; that trade keeps the
-/// implementation simple and its behavior easy to reason about.
-///
-/// Because it lives in the Node process, it is shared by all requests to one
-/// server instance and survives until restart or module reload.
 function createTranslationCache(options: CacheOptions = {}): TranslationCache {
   const ttlMs = options.ttlMs ?? DEFAULT_TTL_MS;
   const maxEntries = options.maxEntries ?? DEFAULT_MAX_ENTRIES;
@@ -106,8 +95,6 @@ declare global {
   var __qzlTranslationCache: TranslationCache | undefined;
 }
 
-/// The production cache: one lazily-created instance per process, kept on
-/// `globalThis` so dev-mode module reloads do not silently reset it.
 export function translationCache(): TranslationCache {
   globalThis.__qzlTranslationCache ??= createTranslationCache();
   return globalThis.__qzlTranslationCache;

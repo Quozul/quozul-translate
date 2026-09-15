@@ -28,29 +28,21 @@ import { usePreferenceStore } from "./use-translation-preferences";
 import { useTranslationRequest } from "./use-translation-request";
 import { useVirtualKeyboard } from "./use-virtual-keyboard";
 
-/// Quiet period after the last input before a request is sent.
 const DEBOUNCE_MS = 400;
 
-/// Preferences: languages, model selection, frequent languages.
 export interface TranslatorPreferencesSlice {
   target: string;
   source: string;
   family: ModelFamilyId;
   preset: ModelPreset;
-  /// Most used target languages, best first.
   frequent: string[];
 }
 
-/// Editor: text and keyboard/composition presentation.
 export interface TranslatorEditorSlice {
   text: string;
-  /// True while an on-screen keyboard is up over the source editor. The
-  /// layout then shows the source alone and translation waits for `submit`.
   keyboardOpen: boolean;
 }
 
-/// Translation session: request lifecycle, newest result, derived
-/// presentation.
 export interface TranslatorSessionSlice {
   request: RequestState;
   lastSuccess: TranslationResult | null;
@@ -66,10 +58,7 @@ export interface TranslatorActions {
   startComposition: () => void;
   endComposition: (value: string) => void;
   clearText: () => void;
-  /// Mobile "Go" key: run the request now instead of waiting for the
-  /// debounce, which keyboard mode disables.
   submit: () => void;
-  /// Re-run the request for the current inputs (the "Try again" button).
   retry: () => void;
   focusSource: () => void;
   blurSource: () => void;
@@ -85,9 +74,6 @@ function bodyFor(inputs: TranslatorInputs) {
   };
 }
 
-/// The coordinator: wires the pure reducer to the request engine, the
-/// preference store, and the virtual-keyboard observation. Deliberately
-/// contains no transport, storage, or clipboard implementation details.
 export function useTranslatorController(): {
   preferencesSlice: TranslatorPreferencesSlice;
   editorSlice: TranslatorEditorSlice;
@@ -99,9 +85,6 @@ export function useTranslatorController(): {
     undefined,
     createInitialState,
   );
-  /// Latest state for event handlers and timer callbacks that must not
-  /// close over a stale render. Updated after every commit; async callbacks
-  /// (engine results, debounce timers, key events) always run post-commit.
   const latest = useRef(state);
   useEffect(() => {
     latest.current = state;
@@ -127,9 +110,6 @@ export function useTranslatorController(): {
           preset: body.preset,
         },
       });
-      // Count completed translations, cache hits included, not picker
-      // browsing. The engine only reports requests that are still current,
-      // so usage is never attributed to a superseded language.
       dispatch({
         type: "usageUpdated",
         frequent: preferences.recordTranslation(body.target),
@@ -156,8 +136,6 @@ export function useTranslatorController(): {
     [engine],
   );
 
-  /// Input edits invalidate in-flight work immediately, then hand the
-  /// lifecycle decision entirely to the reducer.
   const applyInput = useCallback(
     (event: TranslatorEvent) => {
       engine.cancel();
@@ -166,9 +144,6 @@ export function useTranslatorController(): {
     [engine],
   );
 
-  // Hydrate persisted preferences once, after mount, so the prerendered
-  // markup and the first client render agree. `preferences` and `dispatch`
-  // are stable.
   useEffect(() => {
     const restored = preferences.restore();
     dispatch({
@@ -181,11 +156,6 @@ export function useTranslatorController(): {
     });
   }, [preferences]);
 
-  // Persist whenever a preference changes — but only from hydrated state,
-  // so pre-hydration defaults are never written over stored values (the
-  // first post-hydration run harmlessly rewrites the record in its
-  // normalized shape). Text is not a stored preference, so typing never
-  // triggers a write.
   const { target, source, family, preset } = state.inputs;
   const storedFields = useMemo(
     () => ({ target, source, family, preset }),
@@ -197,8 +167,6 @@ export function useTranslatorController(): {
     preferences.persist(storedFields);
   }, [preferences, hydrated, storedFields]);
 
-  // Keyboard transitions are explicit events in both directions. Closing
-  // without a Go key resumes the debounce via the reducer.
   const previousKeyboardOpen = useRef(keyboardOpen);
   useEffect(() => {
     if (previousKeyboardOpen.current === keyboardOpen) return;
@@ -206,11 +174,6 @@ export function useTranslatorController(): {
     dispatch({ type: keyboardOpen ? "keyboardOpened" : "keyboardClosed" });
   }, [keyboardOpen]);
 
-  // The debounce is a consequence of session state, not an imperative
-  // checklist: any transition into `waiting` starts the timer, and leaving
-  // `waiting` (keyboard opens, composition starts, text cleared…) cleans it
-  // up. Eligibility is re-checked when the timer fires because conditions
-  // at scheduling time may no longer hold.
   const request = state.request;
   const inputs = state.inputs;
   useEffect(() => {
@@ -275,7 +238,6 @@ export function useTranslatorController(): {
     [applyInput],
   );
 
-  /// Keyboard "Go": submit immediately when the text is translatable.
   const submit = useCallback(() => {
     const current = latest.current;
     if (current.composing) return;
@@ -350,5 +312,4 @@ export function useTranslatorController(): {
   return { preferencesSlice, editorSlice, sessionSlice, actions };
 }
 
-/// Clipboard feedback lives with the output that uses it.
 export { useCopyFeedback };
