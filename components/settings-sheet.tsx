@@ -78,7 +78,11 @@ export function SettingsSheet({
             </p>
             <Select
               value={family}
+              items={Object.fromEntries(
+                MODEL_FAMILIES.map((entry) => [entry.id, entry.name]),
+              )}
               onValueChange={(value) => {
+                if (value === null) return;
                 const matched = familyById(value);
                 if (matched) onFamilyChange(matched.id);
               }}
@@ -101,8 +105,11 @@ export function SettingsSheet({
             </p>
             <Select
               value={preset}
+              items={Object.fromEntries(
+                MODEL_PRESETS.map((entry) => [entry, PRESET_LABELS[entry]]),
+              )}
               onValueChange={(value) => {
-                if (isModelPreset(value)) onPresetChange(value);
+                if (value !== null && isModelPreset(value)) onPresetChange(value);
               }}
             >
               <SelectTrigger
