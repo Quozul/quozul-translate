@@ -1,5 +1,4 @@
 import type { Metadata, Viewport } from "next";
-import "./globals.css";
 import { Translator } from "@/components/translator";
 
 export const metadata: Metadata = {

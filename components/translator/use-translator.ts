@@ -1,62 +1,60 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { LANGUAGES } from "@/lib/languages";
+import { useCallback, useEffect, useMemo, useReducer, useRef, useState } from "react";
+import { languageByName } from "@/lib/languages";
 import {
-  DEFAULT_FAMILY,
-  DEFAULT_PRESET,
   DETECT_SOURCE,
-  familyById,
-  isModelPreset,
   type ModelFamilyId,
   type ModelPreset,
 } from "@/lib/models";
 import {
-  loadTranslationPreferences,
-  saveTranslationPreferences,
-} from "@/lib/preferences";
+  normalizeTranslationText,
+  validateTranslationInput,
+} from "@/lib/translation-text";
+import type {
+  RequestState,
+  TranslationPresentation,
+  TranslationResult,
+  TranslatorEvent,
+  TranslatorInputs,
+} from "./translator-state";
 import {
-  MAX_TEXT_LENGTH,
-  translationResponseBodySchema,
-  type TranslationRequestBody,
-} from "@/lib/types";
+  createInitialState,
+  getTranslationPresentation,
+  translatorReducer,
+} from "./translator-state";
+import { useCopyFeedback } from "./use-clipboard-feedback";
+import { usePreferenceStore } from "./use-translation-preferences";
+import { useTranslationRequest } from "./use-translation-request";
 import { useVirtualKeyboard } from "./use-virtual-keyboard";
-import type { Phase } from "./types";
-
-const DEFAULT_TARGET = "French";
 
 /// Quiet period after the last input before a request is sent.
 const DEBOUNCE_MS = 400;
 
-/// Give up on a request that never answers.
-const REQUEST_DEADLINE_MS = 90_000;
-
-/// Request inputs with the model fields narrowed to their real types.
-type RequestConfig = Omit<TranslationRequestBody, "family" | "preset"> & {
-  family: ModelFamilyId;
-  preset: ModelPreset;
-};
-
-export interface TranslatorState {
-  /// Source text being translated.
-  text: string;
-  /// Newest completed translation, kept while a newer one is in flight.
-  translated: string;
-  /// Language `translated` was produced in.
-  resultTarget: string;
+/// Preferences: languages, model selection, frequent languages.
+export interface TranslatorPreferencesSlice {
   target: string;
   source: string;
   family: ModelFamilyId;
   preset: ModelPreset;
   /// Most used target languages, best first.
   frequent: string[];
-  phase: Phase;
-  error: string;
-  /// Feedback for the last copy attempt.
-  copyMessage: string;
-  /// True while an on-screen keyboard is up over the source editor. Layout then
-  /// shows the source alone and translation waits for `submit`.
+}
+
+/// Editor: text and keyboard/composition presentation.
+export interface TranslatorEditorSlice {
+  text: string;
+  /// True while an on-screen keyboard is up over the source editor. The
+  /// layout then shows the source alone and translation waits for `submit`.
   keyboardOpen: boolean;
+}
+
+/// Translation session: request lifecycle, newest result, derived
+/// presentation.
+export interface TranslatorSessionSlice {
+  request: RequestState;
+  lastSuccess: TranslationResult | null;
+  presentation: TranslationPresentation;
 }
 
 export interface TranslatorActions {
@@ -68,401 +66,256 @@ export interface TranslatorActions {
   startComposition: () => void;
   endComposition: (value: string) => void;
   clearText: () => void;
-  copy: () => void;
-  /// Translate now, skipping the debounce (the keyboard's Go key).
+  /// Mobile "Go" key: run the request now instead of waiting for the
+  /// debounce, which keyboard mode disables.
   submit: () => void;
-  /// Report source editor focus so keyboard mode only applies to it.
+  /// Re-run the request for the current inputs (the "Try again" button).
+  retry: () => void;
   focusSource: () => void;
   blurSource: () => void;
-  /// Re-run the pipeline for the current inputs (the "Try again" button).
-  retry: () => void;
 }
 
-/// Turn an HTTP status into copy the user can act on.
-function statusMessage(status: number): string {
-  switch (status) {
-    case 400:
-    case 413:
-    case 422:
-      return "The request was rejected. Check the text length, languages, and model settings.";
-    case 504:
-      return "The model took too long to respond. Try again or choose another model in Settings.";
-    default:
-      return "Translation failed. Check that your local model server is running and the selected model is available.";
-  }
+function bodyFor(inputs: TranslatorInputs) {
+  return {
+    text: inputs.text,
+    source: inputs.source,
+    target: inputs.target,
+    family: inputs.family,
+    preset: inputs.preset,
+  };
 }
 
-function isKnownLanguage(name: string): boolean {
-  return LANGUAGES.some((language) => language.name === name);
-}
-
-/// Owns every piece of translator state: the debounced request pipeline, the
-/// language/model selection and its persistence. Exposed to sub-components
-/// through `TranslatorProvider`.
+/// The coordinator: wires the pure reducer to the request engine, the
+/// preference store, and the virtual-keyboard observation. Deliberately
+/// contains no transport, storage, or clipboard implementation details.
 export function useTranslatorController(): {
-  state: TranslatorState;
+  preferencesSlice: TranslatorPreferencesSlice;
+  editorSlice: TranslatorEditorSlice;
+  sessionSlice: TranslatorSessionSlice;
   actions: TranslatorActions;
 } {
-  const [text, setText] = useState("");
-  const [translated, setTranslated] = useState("");
-  const [resultTarget, setResultTarget] = useState("");
-  const [target, setTarget] = useState(DEFAULT_TARGET);
-  const [source, setSource] = useState(DETECT_SOURCE);
-  const [family, setFamily] = useState<ModelFamilyId>(DEFAULT_FAMILY);
-  const [preset, setPreset] = useState<ModelPreset>(DEFAULT_PRESET);
-  const [frequent, setFrequent] = useState<string[]>([]);
-  const [phase, setPhase] = useState<Phase>("idle");
-  const [error, setError] = useState("");
-  const [copyMessage, setCopyMessage] = useState("");
-  const viewportKeyboard = useVirtualKeyboard();
-  const [sourceFocused, setSourceFocused] = useState(false);
-
-  const generation = useRef(0);
-  const debounce = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const deadline = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const abort = useRef<AbortController | null>(null);
-  const composing = useRef(false);
-  const usage = useRef<Record<string, number>>({});
-  /// Text typed but not handed to the model yet.
-  const dirty = useRef(false);
-  /// Mirror of `keyboardOpen` for the request pipeline.
-  const keyboardRef = useRef(false);
-
-  /// Mirror of the request inputs so async callbacks never read stale state.
-  const config = useRef<RequestConfig>({
-    text: "",
-    source: DETECT_SOURCE,
-    target: DEFAULT_TARGET,
-    family: DEFAULT_FAMILY,
-    preset: DEFAULT_PRESET,
+  const [state, dispatch] = useReducer(
+    translatorReducer,
+    undefined,
+    createInitialState,
+  );
+  /// Latest state for event handlers and timer callbacks that must not
+  /// close over a stale render. Updated after every commit; async callbacks
+  /// (engine results, debounce timers, key events) always run post-commit.
+  const latest = useRef(state);
+  useEffect(() => {
+    latest.current = state;
   });
-  /// Mirror of `translated` for the async clipboard callback.
-  const translatedRef = useRef("");
 
-  const clearTimers = useCallback(() => {
-    if (debounce.current !== null) clearTimeout(debounce.current);
-    if (deadline.current !== null) clearTimeout(deadline.current);
-    debounce.current = null;
-    deadline.current = null;
-  }, []);
-
-  const cancel = useCallback(() => {
-    generation.current += 1;
-    clearTimers();
-    abort.current?.abort();
-    abort.current = null;
-  }, [clearTimers]);
-
-  const updateFrequent = useCallback(() => {
-    const languages = LANGUAGES.map((language) => language.name).filter(
-      (name) => (usage.current[name] ?? 0) > 0,
-    );
-    languages.sort(
-      (a, b) =>
-        (usage.current[b] ?? 0) - (usage.current[a] ?? 0) ||
-        a.localeCompare(b),
-    );
-    setFrequent(languages.slice(0, 3));
-  }, []);
-
-  const save = useCallback(() => {
-    saveTranslationPreferences({
-      target: config.current.target,
-      source: config.current.source,
-      family: config.current.family,
-      preset: config.current.preset,
-      usage: usage.current,
-    });
-    updateFrequent();
-  }, [updateFrequent]);
-
-  const fail = useCallback((message: string) => {
-    setPhase("failed");
-    setError(message);
-  }, []);
-
-  const start = useCallback(() => {
-    const controller = new AbortController();
-    const request: RequestConfig = { ...config.current };
-    const current = generation.current;
-    // Whatever arrives belongs to the newest text on screen.
-    dirty.current = false;
-    debounce.current = null;
-    abort.current = controller;
-    setPhase("loading");
-    deadline.current = setTimeout(() => {
-      if (generation.current === current) {
-        cancel();
-        fail(
-          "The model took too long to respond. Try again or choose another model in Settings.",
-        );
-      }
-    }, REQUEST_DEADLINE_MS);
-    fetch("/api/translate", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(request),
-      signal: controller.signal,
-    })
-      .then(async (response) => {
-        if (generation.current !== current) return;
-        if (deadline.current !== null) clearTimeout(deadline.current);
-        deadline.current = null;
-        abort.current = null;
-        if (!response.ok) {
-          const body = (await response.json().catch(() => null)) as {
-            error?: unknown;
-          } | null;
-          throw new Error(
-            typeof body?.error === "string" && body.error !== ""
-              ? body.error
-              : statusMessage(response.status),
-          );
-        }
-        const parsed = translationResponseBodySchema.safeParse(
-          await response.json(),
-        );
-        if (!parsed.success) {
-          throw new Error("Invalid translation response.");
-        }
-        if (parsed.data.translation.trim() === "") {
-          throw new Error(
-            "The model returned an empty translation. Please try again.",
-          );
-        }
-        // Count completed translations, including cache hits, rather than
-        // picker browsing.
-        const hits = usage.current[request.target] ?? 0;
-        usage.current[request.target] = hits + 1;
-        save();
-        translatedRef.current = parsed.data.translation;
-        setTranslated(parsed.data.translation);
-        setResultTarget(request.target);
-        setPhase("ready");
-      })
-      .catch((err: unknown) => {
-        if (generation.current !== current) return;
-        if (deadline.current !== null) clearTimeout(deadline.current);
-        deadline.current = null;
-        abort.current = null;
-        if (err instanceof DOMException && err.name === "AbortError") return;
-        if (err instanceof TypeError) {
-          fail(
-            "Cannot reach the translation server. Check your connection and try again.",
-          );
-          return;
-        }
-        fail(
-          err instanceof Error && err.message
-            ? err.message
-            : "Translation failed. Please try again.",
-        );
-      });
-  }, [cancel, fail, save]);
-
-  const schedule = useCallback(() => {
-    // Abort on the input event itself, before starting the debounce timer.
-    cancel();
-    setError("");
-    setCopyMessage("");
-    const trimmed = config.current.text.trim();
-    if (trimmed === "") {
-      dirty.current = false;
-      translatedRef.current = "";
-      setTranslated("");
-      setResultTarget("");
-      setPhase("idle");
-      return;
-    }
-    if ([...trimmed].length > MAX_TEXT_LENGTH) {
-      fail("Please shorten your text to 20,000 characters or fewer.");
-      return;
-    }
-    dirty.current = true;
-    // Keyboard mode: the translation is off screen, so every pause in typing
-    // stays quiet until `submit` runs the request.
-    if (keyboardRef.current) {
-      setPhase("idle");
-      return;
-    }
-    setPhase("waiting");
-    // Composition is still assembling characters; wait for its end event.
-    if (composing.current) return;
-    debounce.current = setTimeout(start, DEBOUNCE_MS);
-  }, [cancel, fail, start]);
-
-  const submit = useCallback(() => {
-    const trimmed = config.current.text.trim();
-    if (!dirty.current || trimmed === "" || composing.current) return;
-    if ([...trimmed].length > MAX_TEXT_LENGTH) {
-      fail("Please shorten your text to 20,000 characters or fewer.");
-      return;
-    }
-    cancel();
-    setError("");
-    setCopyMessage("");
-    start();
-  }, [cancel, fail, start]);
-
+  const preferences = usePreferenceStore();
+  const [sourceFocused, setSourceFocused] = useState(false);
+  const viewportKeyboard = useVirtualKeyboard();
   const keyboardOpen = viewportKeyboard && sourceFocused;
+  const requestSequence = useRef(0);
 
-  useEffect(() => {
-    const wasOpen = keyboardRef.current;
-    keyboardRef.current = keyboardOpen;
-    // Text typed while the keyboard was up is submitted with its Go key; if the
-    // keyboard went away without one nothing else would translate it, so fall
-    // back to the debounce.
-    if (wasOpen && !keyboardOpen && dirty.current) schedule();
-  }, [keyboardOpen, schedule]);
+  const handleResult = useCallback(
+    (id: number, body: ReturnType<typeof bodyFor>, translation: string) => {
+      dispatch({
+        type: "requestSucceeded",
+        requestId: id,
+        translation,
+        inputs: {
+          text: body.text,
+          source: body.source,
+          target: body.target,
+          family: body.family,
+          preset: body.preset,
+        },
+      });
+      // Count completed translations, cache hits included, not picker
+      // browsing. The engine only reports requests that are still current,
+      // so usage is never attributed to a superseded language.
+      dispatch({
+        type: "usageUpdated",
+        frequent: preferences.recordTranslation(body.target),
+      });
+    },
+    [preferences],
+  );
 
-  /* eslint-disable react-hooks/set-state-in-effect -- one-time restore of persisted preferences on mount */
+  const handleFailure = useCallback(
+    (id: number, _body: ReturnType<typeof bodyFor>, error: string) => {
+      dispatch({ type: "requestFailed", requestId: id, error });
+    },
+    [],
+  );
+
+  const engine = useTranslationRequest(handleResult, handleFailure);
+
+  const startNow = useCallback(
+    (inputs: TranslatorInputs) => {
+      const id = ++requestSequence.current;
+      dispatch({ type: "requestStarted", requestId: id });
+      engine.start(id, bodyFor(inputs));
+    },
+    [engine],
+  );
+
+  /// Input edits invalidate in-flight work immediately, then hand the
+  /// lifecycle decision entirely to the reducer.
+  const applyInput = useCallback(
+    (event: TranslatorEvent) => {
+      engine.cancel();
+      dispatch(event);
+    },
+    [engine],
+  );
+
+  // Hydrate persisted preferences once, after mount, so the prerendered
+  // markup and the first client render agree. `preferences` and `dispatch`
+  // are stable.
   useEffect(() => {
-    const preferences = loadTranslationPreferences();
-    if (isKnownLanguage(preferences.target)) {
-      config.current.target = preferences.target;
-      setTarget(preferences.target);
-    }
-    if (
-      preferences.source === DETECT_SOURCE ||
-      isKnownLanguage(preferences.source)
-    ) {
-      const restoredFamily = familyById(preferences.family);
-      // Families without explicit source support always detect.
-      const restoredSource =
-        restoredFamily && !restoredFamily.requiresSource
-          ? DETECT_SOURCE
-          : preferences.source;
-      config.current.source = restoredSource;
-      setSource(restoredSource);
-    }
-    if (familyById(preferences.family)) {
-      config.current.family = preferences.family as ModelFamilyId;
-      setFamily(preferences.family as ModelFamilyId);
-    }
-    if (isModelPreset(preferences.preset)) {
-      config.current.preset = preferences.preset;
-      setPreset(preferences.preset);
-    }
-    usage.current = preferences.translation_usage;
-    updateFrequent();
-    // Rewrite legacy preferences in the current shape.
-    save();
-    return cancel;
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-  /* eslint-enable react-hooks/set-state-in-effect */
+    const restored = preferences.restore();
+    dispatch({
+      type: "preferencesRestored",
+      target: restored.target,
+      source: restored.source,
+      family: restored.family,
+      preset: restored.preset,
+      frequent: preferences.frequent(),
+    });
+  }, [preferences]);
+
+  // Persist whenever a preference changes — but only from hydrated state,
+  // so pre-hydration defaults are never written over stored values (the
+  // first post-hydration run harmlessly rewrites the record in its
+  // normalized shape). Text is not a stored preference, so typing never
+  // triggers a write.
+  const { target, source, family, preset } = state.inputs;
+  const storedFields = useMemo(
+    () => ({ target, source, family, preset }),
+    [target, source, family, preset],
+  );
+  const hydrated = state.hydrated;
+  useEffect(() => {
+    if (!hydrated) return;
+    preferences.persist(storedFields);
+  }, [preferences, hydrated, storedFields]);
+
+  // Keyboard transitions are explicit events in both directions. Closing
+  // without a Go key resumes the debounce via the reducer.
+  const previousKeyboardOpen = useRef(keyboardOpen);
+  useEffect(() => {
+    if (previousKeyboardOpen.current === keyboardOpen) return;
+    previousKeyboardOpen.current = keyboardOpen;
+    dispatch({ type: keyboardOpen ? "keyboardOpened" : "keyboardClosed" });
+  }, [keyboardOpen]);
+
+  // The debounce is a consequence of session state, not an imperative
+  // checklist: any transition into `waiting` starts the timer, and leaving
+  // `waiting` (keyboard opens, composition starts, text cleared…) cleans it
+  // up. Eligibility is re-checked when the timer fires because conditions
+  // at scheduling time may no longer hold.
+  const request = state.request;
+  const inputs = state.inputs;
+  useEffect(() => {
+    if (request.status !== "waiting") return;
+    const scheduledFor = inputs;
+    const timer = setTimeout(() => {
+      const current = latest.current;
+      if (
+        current.request.status !== "waiting" ||
+        current.inputs !== scheduledFor
+      ) {
+        return;
+      }
+      startNow(scheduledFor);
+    }, DEBOUNCE_MS);
+    return () => clearTimeout(timer);
+  }, [request, inputs, startNow]);
 
   const chooseLanguage = useCallback(
     (name: string) => {
-      if (!isKnownLanguage(name)) return;
-      if (config.current.target === name) return;
-      config.current.target = name;
-      setTarget(name);
-      save();
-      schedule();
+      if (!languageByName(name)) return;
+      applyInput({ type: "targetChanged", target: name });
     },
-    [save, schedule],
+    [applyInput],
   );
 
   const changeSource = useCallback(
     (value: string) => {
-      if (value !== DETECT_SOURCE && !isKnownLanguage(value)) return;
-      if (config.current.source === value) return;
-      config.current.source = value;
-      setSource(value);
-      save();
-      schedule();
+      if (value !== DETECT_SOURCE && !languageByName(value)) return;
+      applyInput({ type: "sourceChanged", source: value });
     },
-    [save, schedule],
+    [applyInput],
   );
 
   const changeFamily = useCallback(
-    (value: ModelFamilyId) => {
-      if (config.current.family === value) return;
-      config.current.family = value;
-      setFamily(value);
-      const next = familyById(value);
-      // Families without explicit source support always detect.
-      if (next && !next.requiresSource) {
-        config.current.source = DETECT_SOURCE;
-        setSource(DETECT_SOURCE);
-      }
-      save();
-      schedule();
-    },
-    [save, schedule],
+    (value: ModelFamilyId) => applyInput({ type: "familyChanged", family: value }),
+    [applyInput],
   );
 
   const changePreset = useCallback(
-    (value: ModelPreset) => {
-      if (config.current.preset === value) return;
-      config.current.preset = value;
-      setPreset(value);
-      save();
-      schedule();
-    },
-    [save, schedule],
+    (value: ModelPreset) => applyInput({ type: "presetChanged", preset: value }),
+    [applyInput],
   );
 
   const changeText = useCallback(
-    (value: string) => {
-      config.current.text = value;
-      setText(value);
-      schedule();
-    },
-    [schedule],
+    (value: string) => applyInput({ type: "textChanged", text: value }),
+    [applyInput],
   );
 
-  const startComposition = useCallback(() => {
-    composing.current = true;
-    schedule();
-  }, [schedule]);
+  const startComposition = useCallback(
+    () => applyInput({ type: "compositionStarted" }),
+    [applyInput],
+  );
 
   const endComposition = useCallback(
-    (value: string) => {
-      config.current.text = value;
-      setText(value);
-      composing.current = false;
-      schedule();
-    },
-    [schedule],
+    (value: string) => applyInput({ type: "compositionEnded", text: value }),
+    [applyInput],
   );
 
-  const clearText = useCallback(() => {
-    config.current.text = "";
-    setText("");
-    schedule();
-  }, [schedule]);
+  const clearText = useCallback(
+    () => applyInput({ type: "textChanged", text: "" }),
+    [applyInput],
+  );
 
-  const focusSource = useCallback(() => {
-    setSourceFocused(true);
-  }, []);
+  /// Keyboard "Go": submit immediately when the text is translatable.
+  const submit = useCallback(() => {
+    const current = latest.current;
+    if (current.composing) return;
+    const trimmed = normalizeTranslationText(current.inputs.text);
+    if (trimmed === "" || validateTranslationInput(trimmed) !== null) return;
+    startNow(current.inputs);
+  }, [startNow]);
 
-  const blurSource = useCallback(() => {
-    setSourceFocused(false);
-  }, []);
+  const retry = useCallback(() => {
+    const current = latest.current;
+    const trimmed = normalizeTranslationText(current.inputs.text);
+    if (trimmed === "" || validateTranslationInput(trimmed) !== null) return;
+    engine.cancel();
+    startNow(current.inputs);
+  }, [engine, startNow]);
 
-  const copy = useCallback(() => {
-    const value = translatedRef.current;
-    if (value === "") return;
-    const write =
-      window.isSecureContext && navigator.clipboard
-        ? navigator.clipboard.writeText(value)
-        : Promise.reject();
-    write
-      .then(() => {
-        if (translatedRef.current !== value) return;
-        setCopyMessage("Copied to clipboard.");
-      })
-      .catch(() => {
-        if (translatedRef.current !== value) return;
-        setCopyMessage(
-          "Could not copy. Select the translation and copy it manually (clipboard access needs HTTPS or localhost).",
-        );
-      });
-  }, []);
+  const focusSource = useCallback(() => setSourceFocused(true), []);
+  const blurSource = useCallback(() => setSourceFocused(false), []);
 
-  // Actions only touch refs and setters, so this identity stays stable.
+  const { frequent } = state;
+  const preferencesSlice = useMemo<TranslatorPreferencesSlice>(
+    () => ({ target, source, family, preset, frequent }),
+    [target, source, family, preset, frequent],
+  );
+
+  const editorSlice = useMemo<TranslatorEditorSlice>(
+    () => ({ text: inputs.text, keyboardOpen }),
+    [inputs.text, keyboardOpen],
+  );
+
+  const presentation = useMemo(
+    () => getTranslationPresentation(request, state.lastSuccess, keyboardOpen),
+    [request, state.lastSuccess, keyboardOpen],
+  );
+
+  const sessionSlice = useMemo<TranslatorSessionSlice>(
+    () => ({ request, lastSuccess: state.lastSuccess, presentation }),
+    [request, state.lastSuccess, presentation],
+  );
+
   const actions = useMemo<TranslatorActions>(
     () => ({
       chooseLanguage,
@@ -473,11 +326,10 @@ export function useTranslatorController(): {
       startComposition,
       endComposition,
       clearText,
-      copy,
       submit,
+      retry,
       focusSource,
       blurSource,
-      retry: schedule,
     }),
     [
       chooseLanguage,
@@ -488,28 +340,15 @@ export function useTranslatorController(): {
       startComposition,
       endComposition,
       clearText,
-      copy,
       submit,
+      retry,
       focusSource,
       blurSource,
-      schedule,
     ],
   );
 
-  const state: TranslatorState = {
-    text,
-    translated,
-    resultTarget,
-    target,
-    source,
-    family,
-    preset,
-    frequent,
-    phase,
-    error,
-    copyMessage,
-    keyboardOpen,
-  };
-
-  return { state, actions };
+  return { preferencesSlice, editorSlice, sessionSlice, actions };
 }
+
+/// Clipboard feedback lives with the output that uses it.
+export { useCopyFeedback };

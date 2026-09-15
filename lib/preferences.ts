@@ -1,4 +1,5 @@
 import {
+  applyFamilySourcePolicy,
   DEFAULT_FAMILY,
   DEFAULT_PRESET,
   DETECT_SOURCE,
@@ -7,99 +8,187 @@ import {
   type ModelFamilyId,
   type ModelPreset,
 } from "./models";
+import { DEFAULT_TARGET } from "./translation-contract";
+import { languageByName, LANGUAGES } from "./languages";
 
 const PREFERENCES_KEY = "qzl.preferences.v1";
 
-/// Shape stored in localStorage. `family` and `preset` are stored as plain
-/// strings and validated again on read.
-export interface TranslationPreferences {
+/// Trustworthy domain shape: after parsing, every field is valid and
+/// mutually consistent. Application code never re-validates it.
+export interface Preferences {
   target: string;
+  /// Source language name or `DETECT_SOURCE`.
   source: string;
-  family: string;
-  preset: string;
-  translation_usage: Record<string, number>;
+  family: ModelFamilyId;
+  preset: ModelPreset;
+  /// Translations completed per target language, known languages only.
+  usage: Record<string, number>;
+}
+
+/// Minimal storage seams so parsing and persistence are testable without a
+/// browser.
+export interface StorageReader {
+  getItem(key: string): string | null;
+}
+
+export interface StorageWriter {
+  setItem(key: string, value: string): void;
+}
+
+/// Shape stored in localStorage. Storage-specific names (`translation_usage`)
+/// live only at this serialization boundary; the domain uses `usage`.
+interface StoredPreferences {
+  target?: unknown;
+  source?: unknown;
+  family?: unknown;
+  preset?: unknown;
+  translation_usage?: unknown;
+  /// Older preferences stored a single `model` key naming Hy-MT2 sizes.
+  model?: unknown;
 }
 
 /// Earlier preferences stored a single `model` key naming Hy-MT2 sizes.
-const LEGACY_MODELS: Record<
-  string,
-  { family: ModelFamilyId; preset: ModelPreset }
-> = {
-  fast: { family: "hy-mt2", preset: "turbo" },
-  quality: { family: "hy-mt2", preset: "balanced" },
-  turbo: { family: "hy-mt2", preset: "quality" },
-};
+const LEGACY_MODELS: Record<string, { family: ModelFamilyId; preset: ModelPreset }> =
+  {
+    fast: { family: "hy-mt2", preset: "turbo" },
+    quality: { family: "hy-mt2", preset: "balanced" },
+    turbo: { family: "hy-mt2", preset: "quality" },
+  };
 
-function fallbackPreferences(): TranslationPreferences {
+function fallbackPreferences(): Preferences {
   return {
-    target: "",
+    target: DEFAULT_TARGET,
     source: DETECT_SOURCE,
     family: DEFAULT_FAMILY,
     preset: DEFAULT_PRESET,
-    translation_usage: {},
+    usage: {},
   };
 }
 
-/// Read persisted preferences, migrating legacy keys. Never throws: unreadable
-/// or malformed storage falls back to defaults.
-export function loadTranslationPreferences(): TranslationPreferences {
-  try {
-    const stored = window.localStorage.getItem(PREFERENCES_KEY);
-    if (!stored) return fallbackPreferences();
-    const parsed = JSON.parse(stored) as Partial<TranslationPreferences> & {
-      model?: unknown;
-    };
-    let family = familyById(
-      typeof parsed.family === "string" ? parsed.family : "",
-    )?.id;
-    let preset: ModelPreset | undefined;
-    if (typeof parsed.preset === "string" && isModelPreset(parsed.preset)) {
-      preset = parsed.preset;
+function parseUsage(value: unknown): Record<string, number> {
+  const usage: Record<string, number> = {};
+  if (typeof value !== "object" || value === null || Array.isArray(value)) {
+    return usage;
+  }
+  for (const [name, count] of Object.entries(value)) {
+    // Keep only known languages with finite, non-negative integer counts.
+    if (!languageByName(name)) continue;
+    if (typeof count !== "number") continue;
+    if (!Number.isSafeInteger(count) || count < 0) continue;
+    usage[name] = count;
+  }
+  return usage;
+}
+
+/// Decode unknown JSON into trustworthy preferences, migrating legacy keys.
+/// Invalid individual fields fall back to their defaults while valid ones are
+/// kept. Never throws.
+export function parseTranslationPreferences(value: unknown): Preferences {
+  const fallback = fallbackPreferences();
+  if (typeof value !== "object" || value === null || Array.isArray(value)) {
+    return fallback;
+  }
+  const stored = value as StoredPreferences;
+
+  let family: ModelFamilyId | undefined;
+  let preset: ModelPreset | undefined;
+  if (typeof stored.family === "string" && familyById(stored.family)) {
+    family = stored.family as ModelFamilyId;
+    if (typeof stored.preset === "string" && isModelPreset(stored.preset)) {
+      preset = stored.preset;
     }
-    if (!family) {
-      const legacy =
-        typeof parsed.model === "string" ? LEGACY_MODELS[parsed.model] : undefined;
-      if (legacy) {
-        family = legacy.family;
-        preset = legacy.preset;
+  }
+  if (!family) {
+    const legacy =
+      typeof stored.model === "string" ? LEGACY_MODELS[stored.model] : undefined;
+    if (legacy) {
+      family = legacy.family;
+      preset = legacy.preset;
+      if (typeof stored.preset === "string" && isModelPreset(stored.preset)) {
+        preset = stored.preset;
       }
     }
-    return {
-      target: typeof parsed.target === "string" ? parsed.target : "",
-      source:
-        typeof parsed.source === "string" ? parsed.source : DETECT_SOURCE,
-      family: family ?? DEFAULT_FAMILY,
-      preset: preset ?? DEFAULT_PRESET,
-      translation_usage:
-        parsed.translation_usage &&
-        typeof parsed.translation_usage === "object"
-          ? parsed.translation_usage
-          : {},
-    };
+  }
+
+  const target =
+    typeof stored.target === "string" && languageByName(stored.target)
+      ? stored.target
+      : fallback.target;
+
+  let source =
+    typeof stored.source === "string" &&
+    (stored.source === DETECT_SOURCE || languageByName(stored.source))
+      ? stored.source
+      : fallback.source;
+
+  family = family ?? fallback.family;
+  preset = preset ?? fallback.preset;
+
+  // Family/source cross-field rule lives in exactly one shared place.
+  const familyEntry = familyById(family);
+  if (familyEntry) source = applyFamilySourcePolicy(source, familyEntry);
+
+  return { target, source, family, preset, usage: parseUsage(stored.translation_usage) };
+}
+
+/// Read persisted preferences. `null` storage (SSR, disabled storage) and
+/// unreadable or malformed contents fall back to defaults. Never throws.
+export function loadTranslationPreferences(
+  storage: StorageReader | null,
+): Preferences {
+  if (!storage) return fallbackPreferences();
+  try {
+    const stored = storage.getItem(PREFERENCES_KEY);
+    if (!stored) return fallbackPreferences();
+    return parseTranslationPreferences(JSON.parse(stored));
   } catch {
     return fallbackPreferences();
   }
 }
 
-/// Persist the current selection. Storage errors are ignored: preferences
-/// simply will not survive the session.
-export function saveTranslationPreferences(input: {
-  target: string;
-  source: string;
-  family: ModelFamilyId;
-  preset: ModelPreset;
-  usage: Record<string, number>;
-}): void {
-  const preferences: TranslationPreferences = {
-    target: input.target,
-    source: input.source,
-    family: input.family,
-    preset: input.preset,
-    translation_usage: input.usage,
+/// Persist preferences. Storage errors are ignored: preferences simply will
+/// not survive the session.
+export function saveTranslationPreferences(
+  storage: StorageWriter | null,
+  preferences: Preferences,
+): void {
+  if (!storage) return;
+  const stored: StoredPreferences & Record<string, unknown> = {
+    target: preferences.target,
+    source: preferences.source,
+    family: preferences.family,
+    preset: preferences.preset,
+    translation_usage: preferences.usage,
   };
   try {
-    window.localStorage.setItem(PREFERENCES_KEY, JSON.stringify(preferences));
+    storage.setItem(PREFERENCES_KEY, JSON.stringify(stored));
   } catch {
     // Storage may be unavailable; preferences simply will not persist.
+  }
+}
+
+/// Rank target languages by completed translations: most-used first, ties
+/// alphabetical, known languages only. Derived — callers never store it.
+export function getFrequentLanguages(
+  usage: Readonly<Record<string, number>>,
+  limit: number,
+): string[] {
+  const languages = LANGUAGES.map((language) => language.name).filter(
+    (name) => (usage[name] ?? 0) > 0,
+  );
+  languages.sort(
+    (a, b) => (usage[b] ?? 0) - (usage[a] ?? 0) || a.localeCompare(b),
+  );
+  return languages.slice(0, limit);
+}
+
+/// The browser storage seam: `null` during prerendering or when storage is
+/// blocked (Safari private mode throws on access, not only on use).
+export function browserStorage(): (StorageReader & StorageWriter) | null {
+  try {
+    if (typeof window === "undefined") return null;
+    return window.localStorage;
+  } catch {
+    return null;
   }
 }

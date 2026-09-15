@@ -72,22 +72,93 @@ export const LANGUAGES: Language[] = [
   { name: "Vietnamese", native: "Tiếng Việt", code: "vi" },
 ];
 
+const LANGUAGE_BY_NAME = new Map(
+  LANGUAGES.map((language) => [language.name, language]),
+);
+
+const LANGUAGE_BY_CODE = new Map(
+  LANGUAGES.map((language) => [language.code.toLowerCase(), language]),
+);
+
 export function languageByName(name: string): Language | undefined {
-  return LANGUAGES.find((language) => language.name === name);
+  return LANGUAGE_BY_NAME.get(name);
 }
 
-/// Name to use for this language when prompting the given model family.
+/// Queries are trimmed and lowercased once per search, not per candidate.
+export function normalizeLanguageQuery(query: string): string {
+  return query.trim().toLowerCase();
+}
+
+/// Match against an already-normalized query. A query that is exactly one
+/// full language code selects only that language — `"ja"` matches Japanese,
+/// not also Gujarati.
+export function matchesNormalizedLanguage(
+  language: Language,
+  normalizedQuery: string,
+): boolean {
+  if (LANGUAGE_BY_CODE.has(normalizedQuery)) {
+    return language.code.toLowerCase() === normalizedQuery;
+  }
+  return [language.name, language.native, language.code].some((value) =>
+    value.toLowerCase().includes(normalizedQuery),
+  );
+}
+
+export function matchesLanguage(language: Language, query: string): boolean {
+  return matchesNormalizedLanguage(language, normalizeLanguageQuery(query));
+}
+
+/// The name to use when prompting a specific model family.
 export function promptName(language: Language, family: ModelFamilyId): string {
   return language.promptNames?.[family] ?? language.name;
 }
 
-export function matchesLanguage(language: Language, query: string): boolean {
-  const normalized = query.trim().toLowerCase();
-  // A complete code is unambiguous ("ja" should not also match "Gujarati").
-  if (LANGUAGES.some((entry) => entry.code.toLowerCase() === normalized)) {
-    return language.code.toLowerCase() === normalized;
-  }
-  return [language.name, language.native, language.code].some((value) =>
-    value.toLowerCase().includes(normalized),
+/// The maximum number of "Frequently used" entries shown by pickers.
+export const FREQUENT_LANGUAGE_LIMIT = 3;
+
+export interface DetectionOption {
+  value: string;
+  label: string;
+}
+
+export interface LanguageGroups {
+  /// The detection pseudo-language, present when it matches the query.
+  detection: DetectionOption | null;
+  /// Recently translated languages, most-used first.
+  frequent: Language[];
+  /// Everything else, in catalog order.
+  others: Language[];
+}
+
+/// The one language grouping/filtering policy: the picker renders exactly
+/// what this returns, so displayed items, keyboard navigation, and the
+/// empty state can never disagree with another filter.
+export function getLanguageGroups(options: {
+  query: string;
+  frequent: readonly string[];
+  detection?: DetectionOption;
+}): LanguageGroups {
+  const normalized = normalizeLanguageQuery(options.query);
+  const topNames = options.frequent.slice(0, FREQUENT_LANGUAGE_LIMIT);
+  const topSet = new Set(topNames);
+
+  const matches = LANGUAGES.filter((language) =>
+    matchesNormalizedLanguage(language, normalized),
   );
+
+  return {
+    detection:
+      options.detection !== undefined &&
+      options.detection.label.toLowerCase().includes(normalized)
+        ? options.detection
+        : null,
+    frequent: topNames
+      .map((name) => LANGUAGE_BY_NAME.get(name))
+      .filter(
+        (language): language is Language =>
+          language !== undefined &&
+          matchesNormalizedLanguage(language, normalized),
+      ),
+    others: matches.filter((language) => !topSet.has(language.name)),
+  };
 }

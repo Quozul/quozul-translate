@@ -4,41 +4,66 @@ import { createContext, useContext, type ReactNode } from "react";
 import {
   useTranslatorController,
   type TranslatorActions,
-  type TranslatorState,
+  type TranslatorEditorSlice,
+  type TranslatorPreferencesSlice,
+  type TranslatorSessionSlice,
 } from "./use-translator";
 
-/// State changes with every keystroke; actions keep a stable identity, so
-/// components that only dispatch (settings, buttons) can subscribe to one or
-/// the other.
-const TranslatorStateContext = createContext<TranslatorState | null>(null);
+/// Context is split into cohesive slices with stable identities per slice:
+/// typing invalidates only the editor slice, copy feedback is not even in
+/// here, and model preferences keep their identity while text changes.
+/// Actions never change identity at all.
+const TranslatorPreferencesContext =
+  createContext<TranslatorPreferencesSlice | null>(null);
+const TranslatorEditorContext =
+  createContext<TranslatorEditorSlice | null>(null);
+const TranslatorSessionContext =
+  createContext<TranslatorSessionSlice | null>(null);
 const TranslatorActionsContext =
   createContext<TranslatorActions | null>(null);
 
 export function TranslatorProvider({ children }: { children: ReactNode }) {
-  const { state, actions } = useTranslatorController();
+  const { preferencesSlice, editorSlice, sessionSlice, actions } =
+    useTranslatorController();
   return (
-    <TranslatorStateContext.Provider value={state}>
-      <TranslatorActionsContext.Provider value={actions}>
-        {children}
-      </TranslatorActionsContext.Provider>
-    </TranslatorStateContext.Provider>
+    <TranslatorPreferencesContext.Provider value={preferencesSlice}>
+      <TranslatorEditorContext.Provider value={editorSlice}>
+        <TranslatorSessionContext.Provider value={sessionSlice}>
+          <TranslatorActionsContext.Provider value={actions}>
+            {children}
+          </TranslatorActionsContext.Provider>
+        </TranslatorSessionContext.Provider>
+      </TranslatorEditorContext.Provider>
+    </TranslatorPreferencesContext.Provider>
   );
 }
 
-export function useTranslatorState(): TranslatorState {
-  const state = useContext(TranslatorStateContext);
-  if (!state) {
-    throw new Error("useTranslatorState must be used inside TranslatorProvider");
+function useSlice<T>(
+  context: React.Context<T | null>,
+  hookName: string,
+): T {
+  const value = useContext(context);
+  if (!value) {
+    throw new Error(`${hookName} must be used inside TranslatorProvider`);
   }
-  return state;
+  return value;
+}
+
+export function useTranslatorPreferences(): TranslatorPreferencesSlice {
+  return useSlice(
+    TranslatorPreferencesContext,
+    "useTranslatorPreferences",
+  );
+}
+
+export function useTranslatorEditor(): TranslatorEditorSlice {
+  return useSlice(TranslatorEditorContext, "useTranslatorEditor");
+}
+
+export function useTranslatorSession(): TranslatorSessionSlice {
+  return useSlice(TranslatorSessionContext, "useTranslatorSession");
 }
 
 export function useTranslatorActions(): TranslatorActions {
-  const actions = useContext(TranslatorActionsContext);
-  if (!actions) {
-    throw new Error(
-      "useTranslatorActions must be used inside TranslatorProvider",
-    );
-  }
-  return actions;
+  return useSlice(TranslatorActionsContext, "useTranslatorActions");
 }

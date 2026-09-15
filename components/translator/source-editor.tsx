@@ -1,21 +1,22 @@
 "use client";
 
-import {
-  useRef,
-  type ChangeEvent,
-  type CompositionEvent,
-  type KeyboardEvent,
-} from "react";
+import { useRef, type ChangeEvent, type CompositionEvent, type KeyboardEvent } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { MAX_TEXT_LENGTH } from "@/lib/types";
+import { MAX_TEXT_LENGTH } from "@/lib/translation-contract";
+import { displayedCharacterCount } from "@/lib/translation-text";
 import { XIcon } from "lucide-react";
-import { useTranslatorActions, useTranslatorState } from "./translator-context";
+import {
+  useTranslatorActions,
+  useTranslatorEditor,
+} from "./translator-context";
+
+const LIMIT_LABEL = MAX_TEXT_LENGTH.toLocaleString("en-US");
 
 /// Where the text to translate is typed, with its clear button and the
 /// character counter that appears close to the limit.
 export function SourceEditor() {
-  const { text, keyboardOpen } = useTranslatorState();
+  const { text, keyboardOpen } = useTranslatorEditor();
   const {
     changeText,
     startComposition,
@@ -27,7 +28,9 @@ export function SourceEditor() {
   } = useTranslatorActions();
   const input = useRef<HTMLTextAreaElement>(null);
 
-  const charCount = [...text.trim()].length;
+  // Same counting semantics the server enforces: normalized, code points.
+  const charCount = displayedCharacterCount(text);
+  const tooLong = charCount > MAX_TEXT_LENGTH;
   const showCount = charCount > MAX_TEXT_LENGTH - 1000;
 
   const handleTextChange = (event: ChangeEvent<HTMLTextAreaElement>) => {
@@ -42,8 +45,8 @@ export function SourceEditor() {
 
   const handleKeyDown = (event: KeyboardEvent<HTMLTextAreaElement>) => {
     // Only the virtual keyboard's Go key submits. A physical keyboard keeps
-    // Enter for newlines and translates on the debounce instead, and Enter
-    // still has to confirm characters being composed.
+    // Enter for newlines and translates on debounce instead, and Enter can
+    // still confirm composed characters.
     if (!keyboardOpen || event.key !== "Enter" || event.shiftKey) return;
     if (event.nativeEvent.isComposing) return;
     event.preventDefault();
@@ -79,8 +82,10 @@ export function SourceEditor() {
         dir="auto"
         placeholder="Enter text"
         aria-label="Text to translate"
+        aria-invalid={tooLong || undefined}
+        aria-describedby={showCount ? "source-limit" : undefined}
         enterKeyHint={keyboardOpen ? "go" : "enter"}
-        className="min-h-40 flex-1 resize-none border-0 bg-transparent px-2 text-2xl focus-visible:ring-0"
+        className="min-h-40 flex-1 resize-none rounded-lg border-0 bg-transparent px-2 text-2xl focus-visible:ring-3 focus-visible:ring-inset"
         value={text}
         onChange={handleTextChange}
         onCompositionStart={startComposition}
@@ -91,13 +96,14 @@ export function SourceEditor() {
       />
       {showCount && (
         <span
+          id="source-limit"
           className={
-            charCount > MAX_TEXT_LENGTH
+            tooLong
               ? "self-end text-xs text-destructive"
               : "self-end text-xs text-muted-foreground"
           }
         >
-          {charCount} / 20,000
+          {charCount} / {LIMIT_LABEL}
         </span>
       )}
     </section>

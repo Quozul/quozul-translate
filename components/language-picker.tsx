@@ -11,7 +11,11 @@ import {
   ComboboxLabel,
   ComboboxList,
 } from "@/components/ui/combobox";
-import { LANGUAGES, matchesLanguage, type Language } from "@/lib/languages";
+import {
+  getLanguageGroups,
+  type DetectionOption,
+  type Language,
+} from "@/lib/languages";
 
 interface LanguagePickerProps {
   selected: string;
@@ -20,17 +24,11 @@ interface LanguagePickerProps {
   /// Accessible name of the field.
   ariaLabel?: string;
   /// Pseudo-language offered before the real languages, such as "Detect
-  /// language" in the source picker. A `selected` equal to its value shows its
-  /// label instead.
-  detect?: { value: string; label: string };
+  /// language" in the source picker. A `selected` equal to its value shows
+  /// its label instead.
+  detect?: DetectionOption;
   /// Locks the picker, for models that detect the source on their own.
   disabled?: boolean;
-}
-
-/// `matchesLanguage` for the entry that is not a real language.
-function matchesLabel(label: string, query: string): boolean {
-  const needle = query.trim().toLowerCase();
-  return needle === "" || label.toLowerCase().includes(needle);
 }
 
 function LanguageOption({ language }: { language: Language }) {
@@ -65,43 +63,30 @@ export function LanguagePicker({
       : selected;
   const inputValue = query ?? selectedLabel;
 
-  const { detectMatch, frequentMatches, otherMatches } = useMemo(() => {
-    const top = frequent.slice(0, 3);
-    const topSet = new Set(top);
-    const search = query ?? "";
-    return {
-      detectMatch:
-        detectValue === undefined || !matchesLabel(detectLabel, search)
-          ? null
-          : { value: detectValue, label: detectLabel },
-      frequentMatches: LANGUAGES.filter(
-        (language) =>
-          topSet.has(language.name) && matchesLanguage(language, search),
-      ).sort(
-        (a, b) => top.indexOf(a.name) - top.indexOf(b.name),
-      ),
-      otherMatches: LANGUAGES.filter(
-        (language) =>
-          !topSet.has(language.name) && matchesLanguage(language, search),
-      ),
-    };
-  }, [query, frequent, detectValue, detectLabel]);
+  // One owner for grouping and matching (see `getLanguageGroups`): the
+  // rendered groups are the filtered collection, so the primitive's
+  // keyboard navigation, selection, and empty state can never drift from
+  // what is displayed.
+  const groups = useMemo(
+    () => getLanguageGroups({ query: query ?? "", frequent, detection: detect }),
+    [query, frequent, detect],
+  );
+
+  const items = useMemo(() => {
+    const values: string[] = [];
+    if (groups.detection !== null) values.push(groups.detection.value);
+    for (const language of groups.frequent) values.push(language.name);
+    for (const language of groups.others) values.push(language.name);
+    return values;
+  }, [groups]);
 
   return (
     <Combobox
       disabled={disabled}
-      items={
-        detectValue === undefined
-          ? LANGUAGES.map((language) => language.name)
-          : [detectValue, ...LANGUAGES.map((language) => language.name)]
-      }
-      filter={(item, search) => {
-        if (detectValue !== undefined && item === detectValue) {
-          return matchesLabel(detectLabel, search);
-        }
-        const language = LANGUAGES.find((entry) => entry.name === item);
-        return language ? matchesLanguage(language, search) : true;
-      }}
+      items={items}
+      // The groups already applied the single filtering policy; a second
+      // filter here would duplicate that reasoning.
+      filter={() => true}
       value={selected}
       onValueChange={(value) => {
         if (typeof value === "string" && value !== "") onSelect(value);
@@ -121,31 +106,33 @@ export function LanguagePicker({
       <ComboboxContent>
         <ComboboxList>
           <ComboboxEmpty>No languages found.</ComboboxEmpty>
-          {detectMatch !== null && (
+          {groups.detection !== null && (
             <ComboboxGroup>
-              <ComboboxItem value={detectMatch.value}>
-                {detectMatch.label}
+              <ComboboxItem value={groups.detection.value}>
+                {groups.detection.label}
               </ComboboxItem>
             </ComboboxGroup>
           )}
-          {frequentMatches.length > 0 && (
+          {groups.frequent.length > 0 && (
             <ComboboxGroup>
               <ComboboxLabel>Frequently used</ComboboxLabel>
-              {frequentMatches.map((language) => (
+              {groups.frequent.map((language) => (
                 <ComboboxItem key={language.code} value={language.name}>
                   <LanguageOption language={language} />
                 </ComboboxItem>
               ))}
             </ComboboxGroup>
           )}
-          <ComboboxGroup>
-            <ComboboxLabel>All languages</ComboboxLabel>
-            {otherMatches.map((language) => (
-              <ComboboxItem key={language.code} value={language.name}>
-                <LanguageOption language={language} />
-              </ComboboxItem>
-            ))}
-          </ComboboxGroup>
+          {groups.others.length > 0 && (
+            <ComboboxGroup>
+              <ComboboxLabel>All languages</ComboboxLabel>
+              {groups.others.map((language) => (
+                <ComboboxItem key={language.code} value={language.name}>
+                  <LanguageOption language={language} />
+                </ComboboxItem>
+              ))}
+            </ComboboxGroup>
+          )}
         </ComboboxList>
       </ComboboxContent>
     </Combobox>

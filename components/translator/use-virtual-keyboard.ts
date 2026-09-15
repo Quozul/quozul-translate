@@ -2,27 +2,32 @@
 
 import { useEffect, useState } from "react";
 
-/// Smallest height covered by the visual viewport that counts as a keyboard.
-/// Smaller differences are browser chrome (toolbars, find-in-page bars).
-const MIN_KEYBOARD_HEIGHT = 140;
+/// Smallest visual-viewport shortfall counted as a keyboard. Smaller
+/// differences come from browser chrome (toolbars, find-in-page bars).
+export const MIN_KEYBOARD_HEIGHT = 140;
 
-/// Whether a virtual keyboard is currently on screen.
-///
-/// The visual viewport shrinks below the layout viewport only while a virtual
-/// keyboard covers the page. Desktop browsers and phones driven by a physical
-/// keyboard keep both viewports the same size, so this stays `false` there and
-/// those devices keep translating while typing.
+/// Heuristic: a virtual keyboard is the common reason the visual viewport
+/// shrinks far below the layout viewport. It is not the only one — pinch
+/// zoom and some browser UI transitions affect the measurements too — so
+/// this predicate is deliberately small and testable, and the keyboard
+/// condition additionally requires the source editor to have focus.
+export function isKeyboardVisible(viewportGapPx: number): boolean {
+  return viewportGapPx > MIN_KEYBOARD_HEIGHT;
+}
+
+/// Whether a virtual keyboard is currently on screen. Desktop browsers and
+/// phones driven by a physical keyboard keep both viewports the same size,
+/// so this stays `false` there and typing keeps translating on debounce.
+/// Needs real-device verification; desktop emulation is not sufficient.
 export function useVirtualKeyboard(): boolean {
   const [open, setOpen] = useState(false);
 
   useEffect(() => {
     const viewport = window.visualViewport;
     if (!viewport) return;
-
     const update = () => {
-      setOpen(window.innerHeight - viewport.height > MIN_KEYBOARD_HEIGHT);
+      setOpen(isKeyboardVisible(window.innerHeight - viewport.height));
     };
-
     update();
     viewport.addEventListener("resize", update);
     window.addEventListener("resize", update);
