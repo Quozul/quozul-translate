@@ -51,16 +51,18 @@ export function SettingsSheet({
 }: SettingsSheetProps) {
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetTrigger asChild>
-        <Button
-          type="button"
-          variant="ghost"
-          size="icon"
-          aria-label="Settings"
-          title="Settings"
-        >
-          <EllipsisVerticalIcon />
-        </Button>
+      <SheetTrigger
+        render={
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            aria-label="Settings"
+            title="Settings"
+          />
+        }
+      >
+        <EllipsisVerticalIcon />
       </SheetTrigger>
       <SheetContent side="bottom" className="max-h-[80dvh]">
         <SheetHeader>
