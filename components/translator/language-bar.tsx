@@ -8,6 +8,7 @@ import {
   useTranslatorPreferences,
 } from "./translator-context";
 import { TranslatorSettings } from "./translator-settings";
+import { ArrowRightIcon } from "lucide-react";
 
 const DETECT_OPTION = { value: DETECT_SOURCE, label: "Detect language" };
 
@@ -34,7 +35,7 @@ export function LanguageBar() {
         />
       </div>
       <span aria-hidden="true" className="text-muted-foreground">
-        →
+        <ArrowRightIcon />
       </span>
       <div className="min-w-0 flex-1">
         <LanguagePicker

@@ -269,8 +269,8 @@ export function useTranslatorController(): {
   );
 
   const presentation = useMemo(
-    () => getTranslationPresentation(request, state.lastSuccess, keyboardOpen),
-    [request, state.lastSuccess, keyboardOpen],
+    () => getTranslationPresentation(request, state.lastSuccess),
+    [request, state.lastSuccess],
   );
 
   const sessionSlice = useMemo<TranslatorSessionSlice>(

@@ -78,7 +78,7 @@ export function SourceEditor() {
         aria-invalid={tooLong || undefined}
         aria-describedby={showCount ? "source-limit" : undefined}
         enterKeyHint={keyboardOpen ? "go" : "enter"}
-        className="min-h-40 flex-1 resize-none rounded-lg border-0 bg-transparent px-2 text-2xl focus-visible:ring-3 focus-visible:ring-inset"
+        className="min-h-40 flex-1 resize-none rounded-lg border-0 bg-transparent px-2 text-2xl leading-normal md:text-2xl focus-visible:ring-3 focus-visible:ring-inset"
         value={text}
         onChange={handleTextChange}
         onCompositionStart={startComposition}

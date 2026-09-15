@@ -32,12 +32,6 @@ const PRESET_LABELS: Record<ModelPreset, string> = {
   quality: "Quality",
 };
 
-const PRESET_DETAILS: Record<ModelPreset, string> = {
-  turbo: "Fastest responses · low memory",
-  balanced: "High quality · moderate memory",
-  quality: "Highest quality · high memory",
-};
-
 interface SettingsSheetProps {
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
@@ -124,12 +118,6 @@ export function SettingsSheet({
                 ))}
               </SelectContent>
             </Select>
-            <p
-              id="model-preset-detail"
-              className="mt-2 text-sm text-muted-foreground"
-            >
-              {PRESET_DETAILS[preset]}
-            </p>
           </div>
         </div>
       </SheetContent>

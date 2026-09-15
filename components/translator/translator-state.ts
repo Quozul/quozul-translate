@@ -243,8 +243,6 @@ export function translatorReducer(
 }
 
 export interface TranslationPresentation {
-  outputHidden: boolean;
-  singlePane: boolean;
   showSkeleton: boolean;
   statusMessage: string;
   errorMessage: string;
@@ -255,7 +253,6 @@ export interface TranslationPresentation {
 export function getTranslationPresentation(
   request: RequestState,
   lastSuccess: TranslationResult | null,
-  keyboardOpen: boolean,
 ): TranslationPresentation {
   const translated = lastSuccess?.translation ?? "";
   const busy = request.status === "waiting" || request.status === "loading";
@@ -275,8 +272,6 @@ export function getTranslationPresentation(
   }
 
   return {
-    outputHidden: request.status === "idle",
-    singlePane: request.status === "idle" || keyboardOpen,
     showSkeleton: busy && translated === "",
     statusMessage,
     errorMessage: request.status === "failed" ? request.error : "",

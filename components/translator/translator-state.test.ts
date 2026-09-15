@@ -240,19 +240,20 @@ describe("preferencesRestored", () => {
 describe("presentation selector", () => {
   const success = { translation: "bonjour", inputs: BASE_INPUTS };
 
-  it("hides the output when idle", () => {
-    const p = getTranslationPresentation({ status: "idle" }, null, false);
-    expect(p.outputHidden).toBe(true);
-    expect(p.singlePane).toBe(true);
+  it("stays quiet when idle", () => {
+    const p = getTranslationPresentation({ status: "idle" }, null);
+    expect(p.showSkeleton).toBe(false);
+    expect(p.statusMessage).toBe("");
+    expect(p.errorMessage).toBe("");
   });
 
   it("shows a skeleton only while busy without output", () => {
     const loading = { status: "loading", requestId: 1 } as const;
     expect(
-      getTranslationPresentation(loading, null, false).showSkeleton,
+      getTranslationPresentation(loading, null).showSkeleton,
     ).toBe(true);
     expect(
-      getTranslationPresentation(loading, success, false).showSkeleton,
+      getTranslationPresentation(loading, success).showSkeleton,
     ).toBe(false);
   });
 
@@ -260,7 +261,6 @@ describe("presentation selector", () => {
     const p = getTranslationPresentation(
       { status: "loading", requestId: 2 },
       success,
-      false,
     );
     expect(p.statusMessage).toBe("Updating translation…");
     expect(p.isStale).toBe(true);
@@ -270,7 +270,6 @@ describe("presentation selector", () => {
     const p = getTranslationPresentation(
       { status: "failed", error: "boom" },
       success,
-      false,
     );
     expect(p.statusMessage).toBe("Previous translation");
     expect(p.errorMessage).toBe("boom");
@@ -278,7 +277,7 @@ describe("presentation selector", () => {
   });
 
   it("announces completion without reading the whole text aloud", () => {
-    const p = getTranslationPresentation({ status: "ready" }, success, false);
+    const p = getTranslationPresentation({ status: "ready" }, success);
     expect(p.statusMessage).toBe("Translation ready");
     expect(p.isStale).toBe(false);
   });

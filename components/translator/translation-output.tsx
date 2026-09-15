@@ -17,12 +17,12 @@ export function TranslationOutput() {
   const resultLanguage = languageByName(resultTarget);
   const copyMessage =
     feedback !== null && feedback.text === translated ? feedback.message : "";
+  const showPlaceholder = translated === "" && !presentation.showSkeleton;
 
   return (
     <section
       className="min-h-0 overflow-y-auto pt-3 md:pt-0"
       aria-label="Translation"
-      hidden={presentation.outputHidden}
       aria-busy={request.status === "loading"}
     >
       <div
@@ -33,6 +33,7 @@ export function TranslationOutput() {
       >
         {presentation.statusMessage}
       </div>
+
       {presentation.errorMessage !== "" && (
         <div className="mb-3 text-[0.9375rem] text-destructive" role="alert">
           <p>{presentation.errorMessage}</p>
@@ -48,7 +49,16 @@ export function TranslationOutput() {
           )}
         </div>
       )}
-      {translated !== "" ? (
+
+      {presentation.showSkeleton && (
+        <div className="flex flex-col gap-3.5" aria-hidden="true">
+          <Skeleton className="h-3.5 w-full" />
+          <Skeleton className="h-3.5 w-[90%]" />
+          <Skeleton className="h-3.5 w-[65%]" />
+        </div>
+      )}
+
+      {translated !== "" && (
         <>
           <p
             dir="auto"
@@ -71,18 +81,19 @@ export function TranslationOutput() {
             </Button>
           </div>
         </>
-      ) : (
-        presentation.showSkeleton && (
-          <div className="flex flex-col gap-3.5" aria-hidden="true">
-            <Skeleton className="h-3.5 w-full" />
-            <Skeleton className="h-3.5 w-[90%]" />
-            <Skeleton className="h-3.5 w-[65%]" />
-          </div>
-        )
       )}
-      <p role="status" className="mt-3 text-xs text-muted-foreground empty:hidden">
-        {copyMessage}
-      </p>
+
+      {showPlaceholder && (
+        <p className="text-2xl wrap-break-word text-muted-foreground">
+          Translation appears here
+        </p>
+      )}
+
+      {copyMessage !== "" && (
+        <p role="status" className="mt-3 text-xs text-muted-foreground">
+          {copyMessage}
+        </p>
+      )}
     </section>
   );
 }

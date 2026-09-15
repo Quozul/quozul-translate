@@ -4,28 +4,28 @@ import { cn } from "@/lib/utils";
 import { LanguageBar } from "./language-bar";
 import { SourceEditor } from "./source-editor";
 import { TranslationOutput } from "./translation-output";
-import { TranslatorProvider, useTranslatorSession } from "./translator-context";
+import { TranslatorProvider, useTranslatorEditor } from "./translator-context";
 
 export function Translator() {
   return (
     <TranslatorProvider>
-      <main className="mx-auto flex min-h-dvh w-full max-w-[760px] flex-col md:max-w-[1180px]">
-        <LanguageBar />
-        <TranslatorPanes />
-      </main>
+      <div className="flex min-h-dvh flex-col justify-center md:px-6 md:py-8">
+        <main className="mx-auto flex min-h-dvh w-full max-w-190 flex-col md:h-136 md:max-h-[calc(100dvh-4rem)] md:min-h-0 md:max-w-295 md:overflow-hidden md:rounded-2xl md:border">
+          <LanguageBar />
+          <TranslatorPanes />
+        </main>
+      </div>
     </TranslatorProvider>
   );
 }
 
 function TranslatorPanes() {
-  const { presentation } = useTranslatorSession();
+  const { keyboardOpen } = useTranslatorEditor();
   return (
     <div
       className={cn(
-        "grid flex-1 p-3",
-        presentation.singlePane
-          ? "grid-rows-[1fr]"
-          : "grid-rows-[1fr_1fr] md:grid-cols-2 md:grid-rows-[1fr] md:gap-6 md:divide-x md:divide-border/60",
+        "grid min-h-0 flex-1 grid-rows-[1fr_1fr] p-3 md:grid-cols-2 md:grid-rows-[1fr] md:gap-6",
+        keyboardOpen && "grid-rows-[1fr]",
       )}
     >
       <SourceEditor />
