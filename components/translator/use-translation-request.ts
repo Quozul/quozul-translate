@@ -5,6 +5,7 @@ import {
   isAbortError,
   requestTranslation,
   TranslationFailure,
+  type TranslationMeta,
 } from "@/lib/translation-client";
 import type { TranslationRequestBody } from "@/lib/translation-contract";
 
@@ -23,7 +24,7 @@ export interface EngineHandlers {
   onResult: (
     requestId: number,
     body: TranslationRequestBody,
-    translation: string,
+    meta: TranslationMeta,
   ) => void;
   onFailure: (
     requestId: number,
@@ -33,8 +34,12 @@ export interface EngineHandlers {
 }
 
 export interface EngineOptions extends Partial<EngineHandlers> {
-  send?: (body: TranslationRequestBody, signal: AbortSignal) => Promise<string>;
+  send?: (
+    body: TranslationRequestBody,
+    signal: AbortSignal,
+  ) => Promise<TranslationMeta>;
   deadlineMs?: number;
+  now?: () => number;
 }
 
 export function createTranslationEngine(
@@ -44,6 +49,7 @@ export function createTranslationEngine(
   const send =
     options.send ?? ((body, signal) => requestTranslation(body, signal));
   const deadlineMs = options.deadlineMs ?? REQUEST_DEADLINE_MS;
+  const now = options.now ?? Date.now;
 
   type Active = { id: number; controller: AbortController };
   let active: Active | null = null;
@@ -60,6 +66,7 @@ export function createTranslationEngine(
     const request: Active = { id: requestId, controller };
     active = request;
     const isCurrent = () => active === request;
+    const startedAt = now();
 
     let deadline: ReturnType<typeof setTimeout> | null = setTimeout(() => {
       controller.abort();
@@ -78,11 +85,16 @@ export function createTranslationEngine(
     }
 
     send(body, controller.signal).then(
-      (translation) => {
+      (meta) => {
         clearDeadline();
         if (!isCurrent()) return;
         active = null;
-        options.onResult(requestId, body, translation);
+        // The server reports its own timing; fall back to the round trip when
+        // the response carries no duration so the status line is never empty.
+        options.onResult(requestId, body, {
+          ...meta,
+          durationMs: meta.durationMs ?? Math.max(0, now() - startedAt),
+        });
       },
       (error: unknown) => {
         clearDeadline();

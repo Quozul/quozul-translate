@@ -34,13 +34,59 @@ function fakeFetch(response: unknown) {
 }
 
 describe("requestTranslation", () => {
-  it("returns the validated translation", async () => {
-    const translation = await requestTranslation(
+  it("returns the validated translation with empty provenance", async () => {
+    const result = await requestTranslation(
       body,
       new AbortController().signal,
       fakeFetch(jsonResponse(200, { translation: "bonjour" })),
     );
-    expect(translation).toBe("bonjour");
+    expect(result.translation).toBe("bonjour");
+    expect(result).toMatchObject({
+      family: null,
+      preset: null,
+      cached: false,
+      durationMs: null,
+    });
+  });
+
+  it("returns model provenance, cache state, and duration", async () => {
+    const result = await requestTranslation(
+      body,
+      new AbortController().signal,
+      fakeFetch(
+        jsonResponse(200, {
+          translation: "bonjour",
+          family: "milmmt",
+          preset: "balanced",
+          cached: true,
+          durationMs: 12,
+        }),
+      ),
+    );
+    expect(result).toMatchObject({
+      translation: "bonjour",
+      family: "milmmt",
+      preset: "balanced",
+      cached: true,
+      durationMs: 12,
+    });
+  });
+
+  it("drops unknown presets and absurd durations instead of failing", async () => {
+    const result = await requestTranslation(
+      body,
+      new AbortController().signal,
+      fakeFetch(
+        jsonResponse(200, {
+          translation: "bonjour",
+          family: "milmmt",
+          preset: "gpt-9",
+          durationMs: -5,
+        }),
+      ),
+    );
+    expect(result.preset).toBeNull();
+    expect(result.durationMs).toBe(0);
   });
 
   it("surfaces the server's error message on failure responses", async () => {

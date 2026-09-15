@@ -41,7 +41,8 @@ pnpm build        # production build
   an explicit source — MiLMMT names the source language in its prompt and
   has no detection mode), the request falls back to a family that can, in
   `MODEL_FAMILIES` order. The response includes the family that actually
-  ran (`family` field, preserved on cache hits).
+  ran (`family` field, preserved on cache hits) plus the `preset`,
+  `cached`, and server-measured `durationMs` used by the status line.
 - **Preferences** (target, source, family, preset, per-language usage)
   persist in `localStorage` under `qzl.preferences.v1`. Reads are fully
   validated: malformed records fall back field-by-field, legacy `model`
@@ -50,6 +51,14 @@ pnpm build        # production build
   30 minutes, FIFO eviction (insertion order — reads do not refresh it),
   256-entry and 16 MiB budgets. It is shared across requests to the same
   Node process and resets on restart/module reload.
+- **Status line** (`components/translator/translation-output.tsx`) sits
+  below the translated text, together with loading and error messages.
+  When the text is ready it reads
+  `Translated by <family> (<preset>) in <duration>ms (cached)` — for
+  example `Translated by MiLMMT (Balanced) in 812ms`. `durationMs` comes
+  from the server; if a response omits it, the client falls back to its
+  own round-trip measurement, and `"(cached)"` appears only for cache
+  hits. With no provenance at all it degrades to `Translation ready`.
 - **Request lifecycle** (`components/translator/use-translation-request.ts`):
   one owner per request — ID token, abort controller, deadline. Results
   and failures commit only while the request is still current, checked

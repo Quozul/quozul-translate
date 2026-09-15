@@ -37,7 +37,9 @@ describe("translateRequest", () => {
     });
     expect(outcome.translation).toBe("bonjour");
     expect(outcome.family.id).toBe("milmmt");
+    expect(outcome.preset).toBe("balanced");
     expect(outcome.fromCache).toBe(false);
+    expect(outcome.durationMs).toBeGreaterThanOrEqual(0);
     expect(completion).toHaveBeenCalledTimes(1);
     expect(completion.mock.calls[0]?.[0]).toMatchObject({
       model: "local/milmmt-46-4b",
@@ -52,6 +54,31 @@ describe("translateRequest", () => {
     expect(first.translation).toBe("bonjour");
     expect(second.fromCache).toBe(true);
     expect(second.translation).toBe("bonjour");
+    expect(completion).toHaveBeenCalledTimes(1);
+  });
+
+  it("reports server-side duration, near zero for cache hits", async () => {
+    let now = 500;
+    const completion = vi.fn<ModelCompletion>().mockImplementation(async () => {
+      now = 1_300;
+      return "bonjour";
+    });
+    const cache = createTranslationCache();
+    const first = await translateRequest(request(), {
+      completion,
+      cache,
+      now: () => now,
+    });
+    expect(first.fromCache).toBe(false);
+    expect(first.durationMs).toBe(800);
+
+    const second = await translateRequest(request(), {
+      completion,
+      cache,
+      now: () => now,
+    });
+    expect(second.fromCache).toBe(true);
+    expect(second.durationMs).toBe(0);
     expect(completion).toHaveBeenCalledTimes(1);
   });
 

@@ -13,7 +13,7 @@ import { ArrowRightIcon } from "lucide-react";
 const DETECT_OPTION = { value: DETECT_SOURCE, label: "Detect language" };
 
 export function LanguageBar() {
-  const { source, target, family, frequent } = useTranslatorPreferences();
+  const { source, target, frequent } = useTranslatorPreferences();
   const { keyboardOpen } = useTranslatorEditor();
   const { changeSource, chooseLanguage } = useTranslatorActions();
 

@@ -38,7 +38,9 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     const body: TranslationResponseBody = {
       translation: outcome.translation,
       family: outcome.family.id,
+      preset: outcome.preset,
       cached: outcome.fromCache,
+      durationMs: outcome.durationMs,
     };
     return NextResponse.json(body);
   } catch (error) {

@@ -3,6 +3,8 @@ import {
   createInitialState,
   getTranslationPresentation,
   translatorReducer,
+  type TranslationAttribution,
+  type TranslationResult,
   type TranslatorState,
   type TranslatorInputs,
 } from "./translator-state";
@@ -24,6 +26,7 @@ function succeed(
   requestId: number,
   translation: string,
   inputs: Partial<TranslatorInputs> = {},
+  attribution: TranslationAttribution | null = null,
 ): TranslatorState {
   if (state.request.status !== "loading") {
     state = translatorReducer(state, { type: "requestStarted", requestId });
@@ -32,6 +35,7 @@ function succeed(
     type: "requestSucceeded",
     requestId,
     translation,
+    attribution,
     inputs: { ...state.inputs, ...inputs },
   });
 }
@@ -88,6 +92,23 @@ describe("translator reducer — invariants", () => {
     expect(state.request).toEqual({ status: "ready" });
     expect(state.lastSuccess?.translation).toBe("bonjour");
     expect(state.lastSuccess?.inputs.text).toBe("hello");
+  });
+
+  it("stores model provenance and clears it when a newer result lacks one", () => {
+    let state = type(createInitialState(), "hello");
+    state = succeed(state, 1, "bonjour", {}, {
+      model: "MiLMMT (Balanced)",
+      durationMs: 812,
+      cached: true,
+    });
+    expect(state.lastSuccess?.attribution).toEqual({
+      model: "MiLMMT (Balanced)",
+      durationMs: 812,
+      cached: true,
+    });
+
+    state = succeed(state, 2, "bonjour!", {});
+    expect(state.lastSuccess?.attribution).toBeNull();
   });
 
   it("ignores results for stale request IDs", () => {
@@ -261,7 +282,14 @@ describe("preferencesRestored", () => {
 });
 
 describe("presentation selector", () => {
-  const success = { translation: "bonjour", inputs: BASE_INPUTS };
+  const success = {
+    translation: "bonjour",
+    inputs: BASE_INPUTS,
+    attribution: null,
+  };
+  const attributed = (
+    attribution: TranslationResult["attribution"],
+  ): TranslationResult => ({ ...success, attribution });
 
   it("stays quiet when idle", () => {
     const p = getTranslationPresentation({ status: "idle" }, null);
@@ -303,5 +331,29 @@ describe("presentation selector", () => {
     const p = getTranslationPresentation({ status: "ready" }, success);
     expect(p.statusMessage).toBe("Translation ready");
     expect(p.isStale).toBe(false);
+  });
+
+  it("names the model, duration, and cache state once ready", () => {
+    const p = getTranslationPresentation(
+      { status: "ready" },
+      attributed({ model: "MiLMMT (Balanced)", durationMs: 812, cached: false }),
+    );
+    expect(p.statusMessage).toBe("Translated by MiLMMT (Balanced) in 812ms");
+  });
+
+  it("marks cached completions in the ready message", () => {
+    const p = getTranslationPresentation(
+      { status: "ready" },
+      attributed({ model: "Hy-MT2 (Turbo)", durationMs: 3, cached: true }),
+    );
+    expect(p.statusMessage).toBe("Translated by Hy-MT2 (Turbo) in 3ms (cached)");
+  });
+
+  it("keeps the retained-output label while a new request runs", () => {
+    const p = getTranslationPresentation(
+      { status: "loading", requestId: 3 },
+      attributed({ model: "MiLMMT (Balanced)", durationMs: 812, cached: false }),
+    );
+    expect(p.statusMessage).toBe("Updating translation…");
   });
 });

@@ -141,6 +141,29 @@ export function isModelPreset(value: string): value is ModelPreset {
   return (MODEL_PRESETS as readonly string[]).includes(value);
 }
 
+/** Human-readable quality preset, e.g. "Balanced" for "balanced". */
+export const MODEL_PRESET_LABELS: Record<ModelPreset, string> = {
+  turbo: "Turbo",
+  balanced: "Balanced",
+  quality: "Quality",
+};
+
+/**
+ * Full model name shown to users, e.g. "MiLMMT (Balanced)". The quality preset
+ * is optional because a caller may only know the family that served the text.
+ * Returns null when the family id is unknown so callers can fall back.
+ */
+export function modelDisplayName(
+  familyId: string | null,
+  preset: ModelPreset | null = null,
+): string | null {
+  if (familyId === null) return null;
+  const family = familyById(familyId);
+  if (!family) return null;
+  if (preset === null) return family.name;
+  return `${family.name} (${MODEL_PRESET_LABELS[preset]})`;
+}
+
 export function familySupports(
   family: ModelFamily,
   source: string | null,

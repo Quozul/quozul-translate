@@ -30,8 +30,17 @@ export const translationRequestBodySchema = z.object({
 
 export const translationResponseBodySchema = z.object({
   translation: z.string(),
+  /** Id of the family that actually served the text (may differ from the request). */
   family: z.string().optional(),
+  /** Quality preset of the model that served the text. */
+  preset: z.string().optional(),
+  /** True when the translation came from the in-memory cache. */
   cached: z.boolean().optional(),
+  /**
+   * Server-side wall time for the translation, in milliseconds. Deliberately
+   * lax: bogus metadata must never invalidate an otherwise good translation.
+   */
+  durationMs: z.number().optional(),
 });
 
 export type TranslationRequestBody = z.infer<typeof translationRequestBodySchema>;

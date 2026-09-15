@@ -23,31 +23,6 @@ export function TranslationOutput() {
       aria-label="Translation"
       aria-busy={request.status === "loading"}
     >
-      <div
-        role="status"
-        aria-live="polite"
-        aria-atomic="true"
-        className="mb-3 text-sm text-muted-foreground empty:hidden"
-      >
-        {presentation.statusMessage}
-      </div>
-
-      {presentation.errorMessage !== "" && (
-        <div className="mb-3 text-[0.9375rem] text-destructive" role="alert">
-          <p>{presentation.errorMessage}</p>
-          {presentation.canRetry && (
-            <Button
-              type="button"
-              variant="link"
-              className="-ml-2"
-              onClick={retry}
-            >
-              Try again
-            </Button>
-          )}
-        </div>
-      )}
-
       {presentation.showSkeleton && (
         <div className="flex flex-col gap-3.5" aria-hidden="true">
           <Skeleton className="h-3.5 w-full" />
@@ -87,6 +62,31 @@ export function TranslationOutput() {
         </p>
       )}
 
+      {/* Status, model provenance, and errors stay below the translated text. */}
+      <div
+        role="status"
+        aria-live="polite"
+        aria-atomic="true"
+        className="mt-3 text-sm text-muted-foreground empty:hidden"
+      >
+        {presentation.statusMessage}
+      </div>
+
+      {presentation.errorMessage !== "" && (
+        <div className="mt-3 text-[0.9375rem] text-destructive" role="alert">
+          <p>{presentation.errorMessage}</p>
+          {presentation.canRetry && (
+            <Button
+              type="button"
+              variant="link"
+              className="-ml-2"
+              onClick={retry}
+            >
+              Try again
+            </Button>
+          )}
+        </div>
+      )}
     </section>
   );
 }

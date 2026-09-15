@@ -18,6 +18,7 @@ import {
 } from "@/components/ui/sheet";
 import {
   MODEL_FAMILIES,
+  MODEL_PRESET_LABELS,
   MODEL_PRESETS,
   familyById,
   isModelPreset,
@@ -25,12 +26,6 @@ import {
   type ModelPreset,
 } from "@/lib/models";
 import { EllipsisVerticalIcon } from "lucide-react";
-
-const PRESET_LABELS: Record<ModelPreset, string> = {
-  turbo: "Turbo",
-  balanced: "Balanced",
-  quality: "Quality",
-};
 
 interface SettingsSheetProps {
   open?: boolean;
@@ -106,7 +101,7 @@ export function SettingsSheet({
             <Select
               value={preset}
               items={Object.fromEntries(
-                MODEL_PRESETS.map((entry) => [entry, PRESET_LABELS[entry]]),
+                MODEL_PRESETS.map((entry) => [entry, MODEL_PRESET_LABELS[entry]]),
               )}
               onValueChange={(value) => {
                 if (value !== null && isModelPreset(value)) onPresetChange(value);
@@ -122,7 +117,7 @@ export function SettingsSheet({
               <SelectContent>
                 {MODEL_PRESETS.map((entry) => (
                   <SelectItem key={entry} value={entry}>
-                    {PRESET_LABELS[entry]}
+                    {MODEL_PRESET_LABELS[entry]}
                   </SelectItem>
                 ))}
               </SelectContent>

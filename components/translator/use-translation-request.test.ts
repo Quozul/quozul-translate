@@ -4,7 +4,10 @@ import {
   createTranslationEngine,
   type TranslationEngine,
 } from "./use-translation-request";
-import { TranslationFailure } from "@/lib/translation-client";
+import {
+  TranslationFailure,
+  type TranslationMeta,
+} from "@/lib/translation-client";
 import type { TranslationRequestBody } from "@/lib/translation-contract";
 
 function bodyFor(text: string, target = "French"): TranslationRequestBody {
@@ -37,30 +40,52 @@ interface Sent {
   body: TranslationRequestBody;
   signal: AbortSignal;
   completion: Deferred<string>;
+  /** Provenance the fake server reports for this request. */
+  meta: Partial<TranslationMeta>;
 }
 
-function makeHarness(deadlineMs = 90_000) {
+function metaFor(
+  translation: string,
+  overrides: Partial<TranslationMeta> = {},
+): TranslationMeta {
+  return {
+    translation,
+    family: null,
+    preset: null,
+    cached: false,
+    durationMs: null,
+    ...overrides,
+  };
+}
+
+function makeHarness(deadlineMs = 90_000, now: () => number = () => 0) {
   const sent: Sent[] = [];
   const results: Array<{ id: number; target: string; translation: string }> =
     [];
+  const metas: TranslationMeta[] = [];
   const failures: Array<{ id: number; error: string }> = [];
 
   const engine: TranslationEngine = createTranslationEngine({
     deadlineMs,
+    now,
     send: (body, signal) => {
       const completion = deferred<string>();
-      sent.push({ body, signal, completion });
-      return completion.promise;
+      const record: Sent = { body, signal, completion, meta: {} };
+      sent.push(record);
+      return completion.promise.then((translation) =>
+        metaFor(translation, record.meta),
+      );
     },
-    onResult: (id, body, translation) => {
-      results.push({ id, target: body.target, translation });
+    onResult: (id, body, meta) => {
+      results.push({ id, target: body.target, translation: meta.translation });
+      metas.push(meta);
     },
     onFailure: (id, _body, error) => {
       failures.push({ id, error });
     },
   });
 
-  return { engine, sent, results, failures };
+  return { engine, sent, results, metas, failures };
 }
 
 async function flush() {
@@ -149,6 +174,38 @@ describe("translation engine request ownership", () => {
     sent[0].completion.reject(new Error("impl details"));
     await flush();
     expect(failures[0]?.error).toMatch(/Translation failed/);
+  });
+
+  it("passes server provenance and duration through to the result", async () => {
+    const { engine, sent, metas } = makeHarness();
+    engine.start(1, bodyFor("hi"));
+    sent[0].meta = {
+      family: "milmmt",
+      preset: "balanced",
+      cached: true,
+      durationMs: 42,
+    };
+    sent[0].completion.resolve("bonjour");
+    await flush();
+    expect(metas).toEqual([
+      {
+        translation: "bonjour",
+        family: "milmmt",
+        preset: "balanced",
+        cached: true,
+        durationMs: 42,
+      },
+    ]);
+  });
+
+  it("falls back to the round-trip clock when the server reports no duration", async () => {
+    let clock = 1_000;
+    const { engine, sent, metas } = makeHarness(90_000, () => clock);
+    engine.start(1, bodyFor("hi"));
+    clock = 1_750;
+    sent[0].completion.resolve("bonjour");
+    await flush();
+    expect(metas[0]?.durationMs).toBe(750);
   });
 
   it("stays silent on intentional cancellation errors from transport", async () => {

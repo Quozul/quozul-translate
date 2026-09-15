@@ -22,9 +22,21 @@ export interface TranslatorInputs {
   preset: ModelPreset;
 }
 
+/**
+ * Provenance of a finished translation, used for the status line under the
+ * translated text ("Translated by MiLMMT (Balanced) in 812ms (cached)").
+ */
+export interface TranslationAttribution {
+  /** Full model name: "<model family> <quality preset>", e.g. "MiLMMT (Balanced)". */
+  model: string;
+  durationMs: number;
+  cached: boolean;
+}
+
 export interface TranslationResult {
   translation: string;
   inputs: TranslatorInputs;
+  attribution: TranslationAttribution | null;
 }
 
 export type PauseReason = "keyboard" | "composition";
@@ -72,6 +84,7 @@ export type TranslatorEvent =
       requestId: number;
       translation: string;
       inputs: TranslatorInputs;
+      attribution?: TranslationAttribution | null;
     }
   | { type: "requestFailed"; requestId: number; error: string };
 
@@ -222,7 +235,11 @@ export function translatorReducer(
       return {
         ...state,
         request: { status: "ready" },
-        lastSuccess: { translation: event.translation, inputs: event.inputs },
+        lastSuccess: {
+          translation: event.translation,
+          inputs: event.inputs,
+          attribution: event.attribution ?? null,
+        },
       };
     }
 
@@ -246,6 +263,20 @@ export interface TranslationPresentation {
   isStale: boolean;
 }
 
+const READY_FALLBACK_MESSAGE = "Translation ready";
+
+/**
+ * Status line for a finished translation. Falls back to a plain acknowledgement
+ * when the response carried no model provenance.
+ */
+export function readyMessage(
+  attribution: TranslationAttribution | null,
+): string {
+  if (attribution === null) return READY_FALLBACK_MESSAGE;
+  const cachedSuffix = attribution.cached ? " (cached)" : "";
+  return `Translated by ${attribution.model} in ${attribution.durationMs}ms${cachedSuffix}`;
+}
+
 export function getTranslationPresentation(
   request: RequestState,
   lastSuccess: TranslationResult | null,
@@ -259,7 +290,7 @@ export function getTranslationPresentation(
   if (busy) {
     statusMessage = translated === "" ? "Translating…" : "Updating translation…";
   } else if (request.status === "ready") {
-    statusMessage = "Translation ready";
+    statusMessage = readyMessage(lastSuccess?.attribution ?? null);
   } else if (
     translated !== "" &&
     (request.status === "failed" || request.status === "paused")

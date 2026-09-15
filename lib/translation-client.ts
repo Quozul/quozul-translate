@@ -1,9 +1,47 @@
 import {
   translationResponseBodySchema,
   type TranslationRequestBody,
+  type TranslationResponseBody,
 } from "./translation-contract";
+import { isModelPreset, type ModelPreset } from "./models";
 
 export class TranslationFailure extends Error {}
+
+/**
+ * What served a translation: the family id and quality preset that produced the
+ * text, whether it came from cache, and how long it took. Fields the server did
+ * not report are null so callers can fall back.
+ */
+export interface TranslationMeta {
+  translation: string;
+  family: string | null;
+  preset: ModelPreset | null;
+  cached: boolean;
+  durationMs: number | null;
+}
+
+function toFiniteDuration(value: number | undefined): number | null {
+  if (typeof value !== "number" || !Number.isFinite(value)) return null;
+  return Math.max(0, Math.round(value));
+}
+
+export function toTranslationMeta(
+  data: TranslationResponseBody,
+): TranslationMeta {
+  return {
+    translation: data.translation,
+    family:
+      typeof data.family === "string" && data.family !== ""
+        ? data.family
+        : null,
+    preset:
+      typeof data.preset === "string" && isModelPreset(data.preset)
+        ? data.preset
+        : null,
+    cached: data.cached === true,
+    durationMs: toFiniteDuration(data.durationMs),
+  };
+}
 
 export function isAbortError(error: unknown): boolean {
   return error instanceof DOMException && error.name === "AbortError";
@@ -34,7 +72,7 @@ export async function requestTranslation(
   body: TranslationRequestBody,
   signal: AbortSignal,
   fetchImpl: typeof fetch = fetch,
-): Promise<string> {
+): Promise<TranslationMeta> {
   let response: Response;
   try {
     response = await fetchImpl("/api/translate", {
@@ -78,5 +116,5 @@ export async function requestTranslation(
       "The model returned an empty translation. Please try again.",
     );
   }
-  return parsed.data.translation;
+  return toTranslationMeta(parsed.data);
 }

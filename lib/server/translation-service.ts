@@ -8,7 +8,10 @@ import { translationCache, type TranslationCache } from "./translation-cache";
 export interface TranslateOutcome {
   translation: string;
   family: SanitizedRequest["family"];
+  preset: SanitizedRequest["preset"];
   fromCache: boolean;
+  /** Wall time spent serving the request, in milliseconds. */
+  durationMs: number;
 }
 
 export interface TranslateOptions {
@@ -24,16 +27,27 @@ export async function translateRequest(
 ): Promise<TranslateOutcome> {
   const sanitized = resolveRequest(body);
   const now = options.now ?? Date.now;
+  const startedAt = now();
+  const finish = (
+    translation: string,
+    fromCache: boolean,
+  ): TranslateOutcome => ({
+    translation,
+    family: sanitized.family,
+    preset: sanitized.preset,
+    fromCache,
+    durationMs: Math.max(0, now() - startedAt),
+  });
 
   if (sanitized.text === "") {
-    return { translation: "", family: sanitized.family, fromCache: false };
+    return finish("", false);
   }
 
   const cache = options.cache ?? translationCache();
   const key = cacheKeyFor(sanitized);
   const cached = cache.get(key, now());
   if (cached !== undefined) {
-    return { translation: cached, family: sanitized.family, fromCache: true };
+    return finish(cached, true);
   }
 
   const result = await options.completion(
@@ -45,5 +59,5 @@ export async function translateRequest(
     throw new ApiError("INVALID_RESPONSE", 502, "The model returned an empty translation.");
   }
   cache.insert(key, translation, now());
-  return { translation, family: sanitized.family, fromCache: false };
+  return finish(translation, false);
 }

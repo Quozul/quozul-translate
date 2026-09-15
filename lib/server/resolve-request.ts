@@ -4,6 +4,7 @@ import {
   familyById,
   resolveFamily,
   type ModelFamily,
+  type ModelPreset,
 } from "../models";
 import {
   validateTranslationInput,
@@ -18,6 +19,7 @@ export interface SanitizedRequest {
   source: Language | null;
   target: Language;
   family: ModelFamily;
+  preset: ModelPreset;
   model: string;
 }
 
@@ -60,7 +62,14 @@ export function resolveRequest(body: TranslationRequestBody): SanitizedRequest {
     );
   }
 
-  return { text, source, target, family, model: family.models[body.preset] };
+  return {
+    text,
+    source,
+    target,
+    family,
+    preset: body.preset,
+    model: family.models[body.preset],
+  };
 }
 
 export function cacheKeyFor(sanitized: SanitizedRequest): CacheKey {

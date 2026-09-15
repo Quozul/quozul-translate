@@ -4,15 +4,18 @@ import { useCallback, useEffect, useMemo, useReducer, useRef, useState } from "r
 import { languageByName } from "@/lib/languages";
 import {
   DETECT_SOURCE,
+  modelDisplayName,
   type ModelFamilyId,
   type ModelPreset,
 } from "@/lib/models";
+import type { TranslationMeta } from "@/lib/translation-client";
 import {
   normalizeTranslationText,
   validateTranslationInput,
 } from "@/lib/translation-text";
 import type {
   RequestState,
+  TranslationAttribution,
   TranslationPresentation,
   TranslationResult,
   TranslatorEvent,
@@ -64,6 +67,28 @@ export interface TranslatorActions {
   blurSource: () => void;
 }
 
+/**
+ * Provenance for a finished request. The server-reported family wins because
+ * resolution may fall back to another family; the requested pair is the
+ * fallback when the response carries no provenance.
+ */
+function attributionFor(
+  meta: TranslationMeta,
+  requestedFamily: ModelFamilyId,
+  requestedPreset: ModelPreset,
+): TranslationAttribution | null {
+  const model = modelDisplayName(
+    meta.family ?? requestedFamily,
+    meta.preset ?? requestedPreset,
+  );
+  if (model === null) return null;
+  return {
+    model,
+    durationMs: meta.durationMs ?? 0,
+    cached: meta.cached,
+  };
+}
+
 function bodyFor(inputs: TranslatorInputs) {
   return {
     text: inputs.text,
@@ -97,11 +122,12 @@ export function useTranslatorController(): {
   const requestSequence = useRef(0);
 
   const handleResult = useCallback(
-    (id: number, body: ReturnType<typeof bodyFor>, translation: string) => {
+    (id: number, body: ReturnType<typeof bodyFor>, meta: TranslationMeta) => {
       dispatch({
         type: "requestSucceeded",
         requestId: id,
-        translation,
+        translation: meta.translation,
+        attribution: attributionFor(meta, body.family, body.preset),
         inputs: {
           text: body.text,
           source: body.source,
