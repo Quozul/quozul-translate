@@ -62,7 +62,6 @@ export function TranslationOutput() {
         </p>
       )}
 
-      {/* Status, model provenance, and errors stay below the translated text. */}
       <div
         role="status"
         aria-live="polite"

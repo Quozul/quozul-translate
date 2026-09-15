@@ -288,7 +288,7 @@ export function getTranslationPresentation(
 
   let statusMessage = "";
   if (busy) {
-    statusMessage = translated === "" ? "Translating…" : "Updating translation…";
+    statusMessage = "Translating…";
   } else if (request.status === "ready") {
     statusMessage = readyMessage(lastSuccess?.attribution ?? null);
   } else if (
