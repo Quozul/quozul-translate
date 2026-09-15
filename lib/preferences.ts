@@ -1,5 +1,4 @@
 import {
-  applyFamilySourcePolicy,
   DEFAULT_FAMILY,
   DEFAULT_PRESET,
   DETECT_SOURCE,
@@ -101,7 +100,7 @@ export function parseTranslationPreferences(value: unknown): Preferences {
       ? stored.target
       : fallback.target;
 
-  let source =
+  const source =
     typeof stored.source === "string" &&
     (stored.source === DETECT_SOURCE || languageByName(stored.source))
       ? stored.source
@@ -109,9 +108,6 @@ export function parseTranslationPreferences(value: unknown): Preferences {
 
   family = family ?? fallback.family;
   preset = preset ?? fallback.preset;
-
-  const familyEntry = familyById(family);
-  if (familyEntry) source = applyFamilySourcePolicy(source, familyEntry);
 
   return { target, source, family, preset, usage: parseUsage(stored.translation_usage) };
 }

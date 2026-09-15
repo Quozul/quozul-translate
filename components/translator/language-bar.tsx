@@ -1,7 +1,7 @@
 "use client";
 
 import { LanguagePicker } from "@/components/language-picker";
-import { DETECT_SOURCE, familyById } from "@/lib/models";
+import { DETECT_SOURCE } from "@/lib/models";
 import {
   useTranslatorActions,
   useTranslatorEditor,
@@ -17,8 +17,6 @@ export function LanguageBar() {
   const { keyboardOpen } = useTranslatorEditor();
   const { changeSource, chooseLanguage } = useTranslatorActions();
 
-  const sourceSelectable = familyById(family)?.sourcePolicy === "required";
-
   return (
     <div
       hidden={keyboardOpen}
@@ -31,7 +29,6 @@ export function LanguageBar() {
           onSelect={changeSource}
           ariaLabel="Source language"
           detect={DETECT_OPTION}
-          disabled={!sourceSelectable}
         />
       </div>
       <span aria-hidden="true" className="text-muted-foreground">

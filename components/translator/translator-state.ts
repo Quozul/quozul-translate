@@ -1,5 +1,4 @@
 import {
-  applyFamilySourcePolicy,
   DEFAULT_FAMILY,
   DEFAULT_PRESET,
   DETECT_SOURCE,
@@ -147,13 +146,10 @@ export function translatorReducer(
       return edited(state, { ...state.inputs, source: event.source });
 
     case "familyChanged": {
-      const familyEntry = familyById(event.family);
-      if (!familyEntry) return state;
-      return edited(state, {
-        ...state.inputs,
-        family: event.family,
-        source: applyFamilySourcePolicy(state.inputs.source, familyEntry),
-      });
+      if (!familyById(event.family)) return state;
+      // The family is a preference; request resolution falls back to a family
+      // that supports the current source mode, so the source stays untouched.
+      return edited(state, { ...state.inputs, family: event.family });
     }
 
     case "presetChanged":

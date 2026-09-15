@@ -30,6 +30,34 @@ describe("resolveRequest", () => {
     expect(resolved.source?.name).toBe("English");
   });
 
+  it("falls back from an auto-detect family to a required-source family when a source is chosen", () => {
+    const resolved = resolveRequest(
+      request({ family: "hy-mt2", source: "English", target: "French" }),
+    );
+    expect(resolved.family.id).toBe("milmmt");
+    expect(resolved.source?.name).toBe("English");
+  });
+
+  it("keeps an auto-detect family when the source is detection", () => {
+    const resolved = resolveRequest(request({ family: "hy-mt2" }));
+    expect(resolved.family.id).toBe("hy-mt2");
+    expect(resolved.source).toBeNull();
+  });
+
+  it("reports no family when only the user-selected order cannot serve an explicit source", () => {
+    // Ukrainian is only known to Hy-MT2, which cannot honour explicit sources.
+    let caught: unknown;
+    try {
+      resolveRequest(
+        request({ family: "hy-mt2", source: "Ukrainian", target: "French" }),
+      );
+    } catch (error) {
+      caught = error;
+    }
+    expect(caught).toBeInstanceOf(ApiError);
+    expect((caught as ApiError).code).toBe("UNSUPPORTED_LANGUAGE_PAIR");
+  });
+
   it("normalizes CRLF and trims outer whitespace", () => {
     const resolved = resolveRequest(request({ text: "  a\r\nb  " }));
     expect(resolved.text).toBe("a\nb");

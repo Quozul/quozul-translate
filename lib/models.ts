@@ -141,13 +141,6 @@ export function isModelPreset(value: string): value is ModelPreset {
   return (MODEL_PRESETS as readonly string[]).includes(value);
 }
 
-export function applyFamilySourcePolicy(
-  source: string,
-  family: ModelFamily,
-): string {
-  return family.sourcePolicy === "automatic" ? DETECT_SOURCE : source;
-}
-
 export function familySupports(
   family: ModelFamily,
   source: string | null,
@@ -158,9 +151,16 @@ export function familySupports(
   if (family.sourcePolicy === "required") {
     return source !== null && languages.includes(source);
   }
-  return true;
+  // "automatic" families detect the language themselves and cannot honour an
+  // explicit source language, so explicit sources fall back to other families.
+  return source === null;
 }
 
+/**
+ * Picks the family that will serve a request. Fallback priority is the
+ * user-selected family first, then the remaining families in declaration
+ * order (MiLMMT, then Hy-MT2).
+ */
 export function resolveFamily(
   selected: ModelFamilyId,
   source: string | null,

@@ -178,14 +178,14 @@ describe("translator reducer — keyboard and composition scheduling", () => {
 });
 
 describe("translator reducer — cross-field rules", () => {
-  it("switching to an auto-detect family forces source detection", () => {
+  it("keeps the explicit source when switching to an auto-detect family", () => {
     let state = translatorReducer(createInitialState(), {
       type: "sourceChanged",
       source: "English",
     });
     expect(state.inputs.source).toBe("English");
     state = translatorReducer(state, { type: "familyChanged", family: "hy-mt2" });
-    expect(state.inputs.source).toBe("detect");
+    expect(state.inputs.source).toBe("English");
   });
 
   it("keeps an explicit source for required-source families", () => {
@@ -195,6 +195,29 @@ describe("translator reducer — cross-field rules", () => {
     });
     state = translatorReducer(state, { type: "familyChanged", family: "milmmt" });
     expect(state.inputs.source).toBe("English");
+  });
+
+  it("keeps the chosen family when a source choice requires a fallback family", () => {
+    let state = translatorReducer(createInitialState(), {
+      type: "familyChanged",
+      family: "hy-mt2",
+    });
+    state = translatorReducer(state, {
+      type: "sourceChanged",
+      source: "English",
+    });
+    expect(state.inputs.family).toBe("hy-mt2");
+    expect(state.inputs.source).toBe("English");
+  });
+
+  it("keeps the chosen family when detection requires a fallback family", () => {
+    let state = translatorReducer(createInitialState(), {
+      type: "familyChanged",
+      family: "milmmt",
+    });
+    state = translatorReducer(state, { type: "sourceChanged", source: "detect" });
+    expect(state.inputs.family).toBe("milmmt");
+    expect(state.inputs.source).toBe("detect");
   });
 
   it("no-ops identical input changes", () => {

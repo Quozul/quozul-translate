@@ -58,12 +58,12 @@ describe("parseTranslationPreferences", () => {
     expect(parsed.preset).toBe("quality");
   });
 
-  it("forces detection for auto-detecting families", () => {
+  it("keeps an explicit source for auto-detecting families (request-time fallback)", () => {
     const parsed = parseTranslationPreferences({
       family: "hy-mt2",
       source: "English",
     });
-    expect(parsed.source).toBe("detect");
+    expect(parsed.source).toBe("English");
   });
 
   it("keeps an explicit source for required-source families", () => {
