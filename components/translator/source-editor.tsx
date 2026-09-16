@@ -18,12 +18,11 @@ export function SourceEditor() {
   const { text } = useTranslatorEditor();
   const {
     changeText,
-    appendText,
     startComposition,
     endComposition,
     clearText,
   } = useTranslatorActions();
-  const { paste } = usePasteFeedback(appendText);
+  const { paste } = usePasteFeedback(changeText);
   const input = useRef<HTMLTextAreaElement>(null);
 
   const charCount = displayedCharacterCount(text);

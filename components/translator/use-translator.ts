@@ -59,7 +59,6 @@ export interface TranslatorActions {
   changeFamily: (value: ModelFamilyId) => void;
   changePreset: (value: ModelPreset) => void;
   changeText: (value: string) => void;
-  appendText: (value: string) => void;
   swapLanguages: () => void;
   startComposition: () => void;
   endComposition: (value: string) => void;
@@ -256,11 +255,6 @@ export function useTranslatorController(): {
     [applyInput],
   );
 
-  const appendText = useCallback(
-    (value: string) => applyInput({ type: "textAppended", text: value }),
-    [applyInput],
-  );
-
   const swapLanguages = useCallback(
     () => applyInput({ type: "languagesSwapped" }),
     [applyInput],
@@ -303,7 +297,6 @@ export function useTranslatorController(): {
       changeFamily,
       changePreset,
       changeText,
-      appendText,
       swapLanguages,
       startComposition,
       endComposition,
@@ -316,7 +309,6 @@ export function useTranslatorController(): {
       changeFamily,
       changePreset,
       changeText,
-      appendText,
       swapLanguages,
       startComposition,
       endComposition,
