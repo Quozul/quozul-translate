@@ -12,6 +12,9 @@ import { TranslatorSettings } from "./translator-settings";
 import { ArrowLeftRightIcon } from "lucide-react";
 
 const DETECT_OPTION = { value: DETECT_SOURCE, label: "Detect language" };
+// Firefox restores a button's dynamic disabled state before React hydrates.
+// https://bugzilla.mozilla.org/show_bug.cgi?id=1847798
+const DISABLE_BROWSER_STATE_RESTORATION = { autoComplete: "off" };
 
 export function LanguageBar() {
   const { source, target, frequent } = useTranslatorPreferences();
@@ -40,6 +43,7 @@ export function LanguageBar() {
         className="shrink-0 text-muted-foreground"
         aria-label="Swap languages"
         title={canSwap ? "Swap languages" : "Choose a source language to swap"}
+        {...DISABLE_BROWSER_STATE_RESTORATION}
         disabled={!canSwap}
         onClick={swapLanguages}
       >
