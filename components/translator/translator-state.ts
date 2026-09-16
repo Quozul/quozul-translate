@@ -48,7 +48,7 @@ export type RequestState =
   | { status: "waiting" }
   | { status: "loading"; requestId: number }
   | { status: "ready" }
-  | { status: "failed"; error: string };
+  | { status: "failed"; error: string; retryable: boolean };
 
 export interface TranslatorState {
   inputs: TranslatorInputs;
@@ -138,7 +138,8 @@ function pendingFor(
     return { status: "ready" };
   }
   const issue = validateTranslationInput(normalized);
-  if (issue) return { status: "failed", error: issue.message };
+  if (issue)
+    return { status: "failed", error: issue.message, retryable: false };
   if (composing) return { status: "paused", reason: "composition" };
   return { status: "waiting" };
 }
@@ -276,7 +277,10 @@ export function translatorReducer(
       ) {
         return state;
       }
-      return { ...state, request: { status: "failed", error: event.error } };
+      return {
+        ...state,
+        request: { status: "failed", error: event.error, retryable: true },
+      };
     }
   }
 }
@@ -327,7 +331,7 @@ export function getTranslationPresentation(
     showSkeleton: busy && translated === "",
     statusMessage,
     errorMessage: request.status === "failed" ? request.error : "",
-    canRetry: request.status === "failed",
+    canRetry: request.status === "failed" && request.retryable,
     isStale: stale,
   };
 }

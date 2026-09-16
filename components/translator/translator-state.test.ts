@@ -75,7 +75,16 @@ describe("translator reducer — invariants", () => {
     expect(state.request).toMatchObject({ status: "failed" });
     if (state.request.status === "failed") {
       expect(state.request.error).toMatch(/4,096 characters/);
+      expect(state.request.retryable).toBe(false);
     }
+  });
+
+  it("control character failures are not retryable", () => {
+    const state = type(createInitialState(), "hello\u0000world");
+    expect(state.request).toMatchObject({
+      status: "failed",
+      retryable: false,
+    });
   });
 
   it("ready sessions always carry a successful result", () => {
@@ -381,12 +390,25 @@ describe("presentation selector", () => {
 
   it("labels previous output after a failure", () => {
     const p = getTranslationPresentation(
-      { status: "failed", error: "boom" },
+      { status: "failed", error: "boom", retryable: true },
       success,
     );
     expect(p.statusMessage).toBe("Previous translation");
     expect(p.errorMessage).toBe("boom");
     expect(p.canRetry).toBe(true);
+  });
+
+  it("hides retry after a non-retryable validation failure", () => {
+    const p = getTranslationPresentation(
+      {
+        status: "failed",
+        error: "Please shorten your text.",
+        retryable: false,
+      },
+      success,
+    );
+    expect(p.errorMessage).toBe("Please shorten your text.");
+    expect(p.canRetry).toBe(false);
   });
 
   it("announces completion without reading the whole text aloud", () => {

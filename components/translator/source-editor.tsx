@@ -62,6 +62,7 @@ export function SourceEditor() {
           aria-label="Paste from clipboard"
           title="Paste from clipboard"
           onClick={handlePaste}
+          className="md:hidden"
         >
           <ClipboardPasteIcon />
         </Button>
