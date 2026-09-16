@@ -1,6 +1,13 @@
 "use client";
 
+import { useEffect } from "react";
 import { Button } from "@/components/ui/button";
+import { Kbd, KbdGroup } from "@/components/ui/kbd";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { LanguagePicker } from "@/components/language-picker";
 import { DETECT_SOURCE } from "@/lib/models";
 import {
@@ -22,6 +29,22 @@ export function LanguageBar() {
   const { changeSource, chooseLanguage, swapLanguages } =
     useTranslatorActions();
 
+  useEffect(() => {
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (
+        (event.ctrlKey || event.metaKey) &&
+        event.shiftKey &&
+        event.key.toLowerCase() === "s"
+      ) {
+        if (!canSwap) return;
+        event.preventDefault();
+        swapLanguages();
+      }
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [canSwap, swapLanguages]);
+
   return (
     <div className="flex items-center gap-2 border-b px-3 py-2">
       <div className="min-w-0 flex-1">
@@ -33,19 +56,32 @@ export function LanguageBar() {
           detect={DETECT_OPTION}
         />
       </div>
-      <Button
-        type="button"
-        variant="ghost"
-        size="icon"
-        className="shrink-0 text-muted-foreground"
-        aria-label="Swap languages"
-        title={canSwap ? "Swap languages" : "Choose a source language to swap"}
-        {...DISABLE_BROWSER_STATE_RESTORATION}
-        disabled={!canSwap}
-        onClick={swapLanguages}
-      >
-        <ArrowLeftRightIcon />
-      </Button>
+      <Tooltip>
+        <TooltipTrigger
+          render={
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              className="shrink-0 text-muted-foreground"
+              aria-label="Swap languages"
+              {...DISABLE_BROWSER_STATE_RESTORATION}
+              disabled={!canSwap}
+              onClick={swapLanguages}
+            />
+          }
+        >
+          <ArrowLeftRightIcon />
+        </TooltipTrigger>
+        <TooltipContent side="bottom">
+          Swap languages
+          <KbdGroup>
+            <Kbd>Ctrl</Kbd>
+            <Kbd>Shift</Kbd>
+            <Kbd>S</Kbd>
+          </KbdGroup>
+        </TooltipContent>
+      </Tooltip>
       <div className="min-w-0 flex-1">
         <LanguagePicker
           selected={target}
