@@ -247,8 +247,9 @@ describe("translator reducer — swapping languages", () => {
     expect(state.inputs.source).toBe("French");
     expect(state.inputs.target).toBe("English");
     expect(state.inputs.text).toBe("bonjour");
-    // The reverse direction has to be translated, so a request is scheduled.
-    expect(state.request).toEqual({ status: "waiting" });
+    // The reverse direction has to be translated, so a request is scheduled
+    // immediately: a swap is deliberate and must not wait out the debounce.
+    expect(state.request).toEqual({ status: "waiting", immediate: true });
   });
 
   it("is offered only for an explicit source language", () => {

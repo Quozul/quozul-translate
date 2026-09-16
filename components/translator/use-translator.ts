@@ -194,6 +194,10 @@ export function useTranslatorController(): {
   useEffect(() => {
     if (request.status !== "waiting") return;
     const scheduledFor = inputs;
+    if (request.immediate) {
+      startNow(scheduledFor);
+      return;
+    }
     const timer = setTimeout(() => {
       const current = latest.current;
       if (

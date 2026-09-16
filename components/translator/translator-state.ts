@@ -45,7 +45,8 @@ export type PauseReason = "composition";
 export type RequestState =
   | { status: "idle" }
   | { status: "paused"; reason: PauseReason }
-  | { status: "waiting" }
+  /** `immediate` skips the typing debounce (e.g. an explicit language swap). */
+  | { status: "waiting"; immediate?: boolean }
   | { status: "loading"; requestId: number }
   | { status: "ready" }
   | { status: "failed"; error: string; retryable: boolean };
@@ -182,12 +183,16 @@ export function translatorReducer(
         state.request.status === "ready" && translated !== ""
           ? translated
           : state.inputs.text;
-      return edited(state, {
+      const next = edited(state, {
         ...state.inputs,
         text,
         source: state.inputs.target,
         target: state.inputs.source,
       });
+      // A swap is a deliberate action, not typing: translate without waiting.
+      return next.request.status === "waiting"
+        ? { ...next, request: { status: "waiting", immediate: true } }
+        : next;
     }
 
     case "textAppended": {
