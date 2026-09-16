@@ -7,10 +7,12 @@ import {
   type ModelFamilyId,
   type ModelPreset,
 } from "./models";
+import { LANGUAGES } from "@/lib/languages";
 
-export const MAX_TEXT_LENGTH = 20_000;
+export const MAX_TEXT_LENGTH = 4_096;
 
-export const DEFAULT_TARGET = "French";
+export const DEFAULT_TARGET =
+  LANGUAGES.find((lang) => lang.code === navigator.language)?.name ?? "English";
 
 function isFamilyId(value: string): value is ModelFamilyId {
   return MODEL_FAMILIES.some((family) => family.id === value);
