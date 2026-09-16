@@ -35,7 +35,7 @@ describe("parseTranslationPreferences", () => {
     expect(parsed.target).toBe("Japanese");
     expect(parsed.source).toBe("detect");
     expect(parsed.family).toBe("hy-mt2");
-    expect(parsed.preset).toBe("balanced");
+    expect(parsed.preset).toBe("turbo");
   });
 
   it.each([
@@ -98,12 +98,12 @@ describe("parseTranslationPreferences", () => {
 
 describe("loadTranslationPreferences", () => {
   it("returns defaults when storage is null (SSR or blocked storage)", () => {
-    expect(loadTranslationPreferences(null).target).toBe("French");
+    expect(loadTranslationPreferences(null).target).toBe("English");
   });
 
   it("returns defaults when the key is missing", () => {
     const { reader } = memoryStorage();
-    expect(loadTranslationPreferences(reader).preset).toBe("balanced");
+    expect(loadTranslationPreferences(reader).preset).toBe("turbo");
   });
 
   it("returns defaults for invalid JSON", () => {

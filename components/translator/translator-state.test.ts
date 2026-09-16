@@ -71,10 +71,10 @@ describe("translator reducer — invariants", () => {
   });
 
   it("text longer than the limit fails with the shared message", () => {
-    const state = type(createInitialState(), "a".repeat(20_001));
+    const state = type(createInitialState(), "a".repeat(4_097));
     expect(state.request).toMatchObject({ status: "failed" });
     if (state.request.status === "failed") {
-      expect(state.request.error).toMatch(/20,000 characters/);
+      expect(state.request.error).toMatch(/4,096 characters/);
     }
   });
 

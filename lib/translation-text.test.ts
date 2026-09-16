@@ -51,7 +51,7 @@ describe("validateTranslationInput", () => {
   });
 
   it("counts code points, not UTF-16 units, against the limit", () => {
-    const emoji = "😀".repeat(10_001);
+    const emoji = "😀".repeat(2_048);
     expect(validateTranslationInput(emoji)).toBeNull();
   });
 

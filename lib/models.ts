@@ -195,7 +195,7 @@ export type ModelFamilyId = ModelFamily["id"];
 export const MODEL_FAMILIES: readonly ModelFamily[] = FAMILIES;
 
 export const DEFAULT_FAMILY: ModelFamilyId = "milmmt";
-export const DEFAULT_PRESET: ModelPreset = "balanced";
+export const DEFAULT_PRESET: ModelPreset = "turbo";
 
 export function familyById(id: string): ModelFamily | undefined {
   return MODEL_FAMILIES.find((family) => family.id === id);
