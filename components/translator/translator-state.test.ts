@@ -67,8 +67,8 @@ describe("translator reducer — invariants", () => {
 
   it("distinguishes empty input from a deferred one", () => {
     let state = type(createInitialState(), "hello");
-    state = translatorReducer(state, { type: "keyboardOpened" });
-    expect(state.request).toEqual({ status: "paused", reason: "keyboard" });
+    state = translatorReducer(state, { type: "compositionStarted" });
+    expect(state.request).toEqual({ status: "paused", reason: "composition" });
 
     const empty = type(createInitialState(), "");
     expect(empty.request).toEqual({ status: "idle" });
@@ -133,57 +133,8 @@ describe("translator reducer — invariants", () => {
   });
 });
 
-describe("translator reducer — keyboard and composition scheduling", () => {
-  it("opening the keyboard pauses a pending debounce", () => {
-    let state = type(createInitialState(), "hello");
-    state = translatorReducer(state, { type: "keyboardOpened" });
-    expect(state.request).toEqual({ status: "paused", reason: "keyboard" });
-  });
-
-  it("opening the keyboard does NOT disturb a running request", () => {
-    let state = type(createInitialState(), "hello");
-    state = translatorReducer(state, { type: "requestStarted", requestId: 1 });
-    state = translatorReducer(state, { type: "keyboardOpened" });
-    expect(state.request).toEqual({ status: "loading", requestId: 1 });
-  });
-
-  it("closing the keyboard resumes the debounce for unsubmitted edits", () => {
-    let state = type(createInitialState(), "hello");
-    state = translatorReducer(state, { type: "keyboardOpened" });
-    state = translatorReducer(state, { type: "keyboardClosed" });
-    expect(state.request).toEqual({ status: "waiting" });
-  });
-
-  it("closing the keyboard does not re-request already-translated text", () => {
-    let state = type(createInitialState(), "hello");
-    state = translatorReducer(state, { type: "requestStarted", requestId: 1 });
-    state = translatorReducer(state, {
-      type: "requestSucceeded",
-      requestId: 1,
-      translation: "bonjour",
-      inputs: state.inputs,
-    });
-    state = translatorReducer(state, { type: "keyboardOpened" });
-    state = translatorReducer(state, { type: "keyboardClosed" });
-    expect(state.request).toEqual({ status: "ready" });
-  });
-
-  it("a failure does not silently turn into a retry when the keyboard closes", () => {
-    let state = type(createInitialState(), "hello");
-    state = translatorReducer(state, { type: "keyboardOpened" });
-    state = translatorReducer(state, { type: "keyboardClosed" });
-    state = translatorReducer(state, { type: "requestStarted", requestId: 1 });
-    state = translatorReducer(state, {
-      type: "requestFailed",
-      requestId: 1,
-      error: "boom",
-    });
-    state = translatorReducer(state, { type: "keyboardOpened" });
-    state = translatorReducer(state, { type: "keyboardClosed" });
-    expect(state.request).toEqual({ status: "failed", error: "boom" });
-  });
-
-  it("composition takes priority over the keyboard and defers work", () => {
+describe("translator reducer — composition scheduling", () => {
+  it("composition defers work until it ends", () => {
     let state = type(createInitialState(), "ひ");
     state = translatorReducer(state, { type: "compositionStarted" });
     expect(state.request).toEqual({ status: "paused", reason: "composition" });
@@ -406,7 +357,7 @@ describe("presentation selector", () => {
       { status: "loading", requestId: 2 },
       success,
     );
-    expect(p.statusMessage).toBe("Updating translation…");
+    expect(p.statusMessage).toBe("Translating…");
     expect(p.isStale).toBe(true);
   });
 
@@ -447,6 +398,6 @@ describe("presentation selector", () => {
       { status: "loading", requestId: 3 },
       attributed({ model: "MiLMMT (Balanced)", durationMs: 812, cached: false }),
     );
-    expect(p.statusMessage).toBe("Updating translation…");
+    expect(p.statusMessage).toBe("Translating…");
   });
 });

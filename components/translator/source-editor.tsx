@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, type ChangeEvent, type CompositionEvent, type KeyboardEvent } from "react";
+import { useRef, type ChangeEvent, type CompositionEvent } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { MAX_TEXT_LENGTH } from "@/lib/translation-contract";
@@ -15,16 +15,13 @@ import { usePasteFeedback } from "./use-clipboard-feedback";
 const LIMIT_LABEL = MAX_TEXT_LENGTH.toLocaleString("en-US");
 
 export function SourceEditor() {
-  const { text, keyboardOpen } = useTranslatorEditor();
+  const { text } = useTranslatorEditor();
   const {
     changeText,
     appendText,
     startComposition,
     endComposition,
     clearText,
-    submit,
-    focusSource,
-    blurSource,
   } = useTranslatorActions();
   const { paste } = usePasteFeedback(appendText);
   const input = useRef<HTMLTextAreaElement>(null);
@@ -41,14 +38,6 @@ export function SourceEditor() {
     event: CompositionEvent<HTMLTextAreaElement>,
   ) => {
     endComposition(event.currentTarget.value);
-  };
-
-  const handleKeyDown = (event: KeyboardEvent<HTMLTextAreaElement>) => {
-    if (!keyboardOpen || event.key !== "Enter" || event.shiftKey) return;
-    if (event.nativeEvent.isComposing) return;
-    event.preventDefault();
-    submit();
-    input.current?.blur();
   };
 
   const handleClear = () => {
@@ -96,15 +85,11 @@ export function SourceEditor() {
         aria-label="Text to translate"
         aria-invalid={tooLong || undefined}
         aria-describedby={showCount ? "source-limit" : undefined}
-        enterKeyHint={keyboardOpen ? "go" : "enter"}
         className="min-h-40 flex-1 resize-none rounded-lg border-0 bg-transparent px-2 text-2xl leading-normal md:text-2xl focus-visible:ring-3 focus-visible:ring-inset"
         value={text}
         onChange={handleTextChange}
         onCompositionStart={startComposition}
         onCompositionEnd={handleCompositionEnd}
-        onKeyDown={handleKeyDown}
-        onFocus={focusSource}
-        onBlur={blurSource}
       />
       {showCount && (
         <span

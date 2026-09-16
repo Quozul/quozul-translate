@@ -40,7 +40,7 @@ export interface TranslationResult {
   attribution: TranslationAttribution | null;
 }
 
-export type PauseReason = "keyboard" | "composition";
+export type PauseReason = "composition";
 
 export type RequestState =
   | { status: "idle" }
@@ -54,7 +54,6 @@ export interface TranslatorState {
   inputs: TranslatorInputs;
   request: RequestState;
   lastSuccess: TranslationResult | null;
-  keyboardOpen: boolean;
   composing: boolean;
   hydrated: boolean;
   frequent: string[];
@@ -70,8 +69,6 @@ export type TranslatorEvent =
   | { type: "presetChanged"; preset: ModelPreset }
   | { type: "compositionStarted" }
   | { type: "compositionEnded"; text: string }
-  | { type: "keyboardOpened" }
-  | { type: "keyboardClosed" }
   | {
       type: "preferencesRestored";
       target: string;
@@ -124,7 +121,6 @@ export function createInitialState(): TranslatorState {
     },
     request: { status: "idle" },
     lastSuccess: null,
-    keyboardOpen: false,
     composing: false,
     hydrated: false,
     frequent: [],
@@ -134,7 +130,7 @@ export function createInitialState(): TranslatorState {
 function pendingFor(
   inputs: TranslatorInputs,
   lastSuccess: TranslationResult | null,
-  pauses: { keyboardOpen: boolean; composing: boolean },
+  composing: boolean,
 ): RequestState {
   const normalized = normalizeTranslationText(inputs.text);
   if (normalized === "") return { status: "idle" };
@@ -143,14 +139,13 @@ function pendingFor(
   }
   const issue = validateTranslationInput(normalized);
   if (issue) return { status: "failed", error: issue.message };
-  if (pauses.composing) return { status: "paused", reason: "composition" };
-  if (pauses.keyboardOpen) return { status: "paused", reason: "keyboard" };
+  if (composing) return { status: "paused", reason: "composition" };
   return { status: "waiting" };
 }
 
 function edited(state: TranslatorState, inputs: TranslatorInputs): TranslatorState {
   if (sameInputs(state.inputs, inputs)) return state;
-  const request = pendingFor(inputs, state.lastSuccess, state);
+  const request = pendingFor(inputs, state.lastSuccess, state.composing);
   return {
     ...state,
     inputs,
@@ -215,7 +210,10 @@ export function translatorReducer(
     case "compositionStarted": {
       if (state.composing) return state;
       const next = { ...state, composing: true };
-      return { ...next, request: pendingFor(next.inputs, next.lastSuccess, next) };
+      return {
+        ...next,
+        request: pendingFor(next.inputs, next.lastSuccess, true),
+      };
     }
 
     case "compositionEnded": {
@@ -224,28 +222,9 @@ export function translatorReducer(
         composing: false,
         inputs: { ...state.inputs, text: event.text },
       };
-      return { ...next, request: pendingFor(next.inputs, next.lastSuccess, next) };
-    }
-
-    case "keyboardOpened": {
-      if (state.keyboardOpen) return state;
-      const next = { ...state, keyboardOpen: true };
-      if (state.request.status !== "waiting" && state.request.status !== "paused") {
-        return next;
-      }
       return {
         ...next,
-        request: pendingFor(next.inputs, next.lastSuccess, next),
-      };
-    }
-
-    case "keyboardClosed": {
-      if (!state.keyboardOpen) return state;
-      const next = { ...state, keyboardOpen: false };
-      if (state.request.status !== "paused") return next;
-      return {
-        ...next,
-        request: pendingFor(next.inputs, next.lastSuccess, next),
+        request: pendingFor(next.inputs, next.lastSuccess, false),
       };
     }
 

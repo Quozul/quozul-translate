@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useReducer, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useReducer, useRef } from "react";
 import { languageByName } from "@/lib/languages";
 import {
   DETECT_SOURCE,
@@ -30,7 +30,6 @@ import {
 import { useCopyFeedback } from "./use-clipboard-feedback";
 import { usePreferenceStore } from "./use-translation-preferences";
 import { useTranslationRequest } from "./use-translation-request";
-import { useVirtualKeyboard } from "./use-virtual-keyboard";
 
 const DEBOUNCE_MS = 400;
 
@@ -44,7 +43,6 @@ export interface TranslatorPreferencesSlice {
 
 export interface TranslatorEditorSlice {
   text: string;
-  keyboardOpen: boolean;
   /** False while the source is auto-detect: there is nothing to swap into the target. */
   canSwap: boolean;
 }
@@ -66,10 +64,7 @@ export interface TranslatorActions {
   startComposition: () => void;
   endComposition: (value: string) => void;
   clearText: () => void;
-  submit: () => void;
   retry: () => void;
-  focusSource: () => void;
-  blurSource: () => void;
 }
 
 /**
@@ -121,9 +116,6 @@ export function useTranslatorController(): {
   });
 
   const preferences = usePreferenceStore();
-  const [sourceFocused, setSourceFocused] = useState(false);
-  const viewportKeyboard = useVirtualKeyboard();
-  const keyboardOpen = viewportKeyboard && sourceFocused;
   const requestSequence = useRef(0);
 
   const handleResult = useCallback(
@@ -197,13 +189,6 @@ export function useTranslatorController(): {
     if (!hydrated) return;
     preferences.persist(storedFields);
   }, [preferences, hydrated, storedFields]);
-
-  const previousKeyboardOpen = useRef(keyboardOpen);
-  useEffect(() => {
-    if (previousKeyboardOpen.current === keyboardOpen) return;
-    previousKeyboardOpen.current = keyboardOpen;
-    dispatch({ type: keyboardOpen ? "keyboardOpened" : "keyboardClosed" });
-  }, [keyboardOpen]);
 
   const request = state.request;
   const inputs = state.inputs;
@@ -279,14 +264,6 @@ export function useTranslatorController(): {
     [applyInput],
   );
 
-  const submit = useCallback(() => {
-    const current = latest.current;
-    if (current.composing) return;
-    const trimmed = normalizeTranslationText(current.inputs.text);
-    if (trimmed === "" || validateTranslationInput(trimmed) !== null) return;
-    startNow(current.inputs);
-  }, [startNow]);
-
   const retry = useCallback(() => {
     const current = latest.current;
     const trimmed = normalizeTranslationText(current.inputs.text);
@@ -294,9 +271,6 @@ export function useTranslatorController(): {
     engine.cancel();
     startNow(current.inputs);
   }, [engine, startNow]);
-
-  const focusSource = useCallback(() => setSourceFocused(true), []);
-  const blurSource = useCallback(() => setSourceFocused(false), []);
 
   const { frequent } = state;
   const preferencesSlice = useMemo<TranslatorPreferencesSlice>(
@@ -306,8 +280,8 @@ export function useTranslatorController(): {
 
   const canSwap = canSwapLanguages(inputs);
   const editorSlice = useMemo<TranslatorEditorSlice>(
-    () => ({ text: inputs.text, keyboardOpen, canSwap }),
-    [inputs.text, keyboardOpen, canSwap],
+    () => ({ text: inputs.text, canSwap }),
+    [inputs.text, canSwap],
   );
 
   const presentation = useMemo(
@@ -332,10 +306,7 @@ export function useTranslatorController(): {
       startComposition,
       endComposition,
       clearText,
-      submit,
       retry,
-      focusSource,
-      blurSource,
     }),
     [
       chooseLanguage,
@@ -348,10 +319,7 @@ export function useTranslatorController(): {
       startComposition,
       endComposition,
       clearText,
-      submit,
       retry,
-      focusSource,
-      blurSource,
     ],
   );
 

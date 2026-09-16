@@ -31,9 +31,8 @@ pnpm build        # production build
 
 ## Behavior notes
 
-- **Desktop** translates on a 400 ms debounce after typing stops.
-  **Mobile** keyboard mode defers translation until the Go key; closing
-  the keyboard without Go resumes the debounce for unsubmitted edits.
+- Translation runs automatically on a 400 ms debounce after typing stops,
+  on desktop and mobile alike.
 - **IME composition** never fires intermediate requests; work resumes when
   composition ends.
 - **Model selection** in Settings is a *preference*, not a guarantee: if

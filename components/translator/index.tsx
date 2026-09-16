@@ -4,7 +4,7 @@ import { cn } from "@/lib/utils";
 import { LanguageBar } from "./language-bar";
 import { SourceEditor } from "./source-editor";
 import { TranslationOutput } from "./translation-output";
-import {TranslatorProvider, useTranslatorEditor, useTranslatorSession} from "./translator-context";
+import {TranslatorProvider, useTranslatorSession} from "./translator-context";
 
 export function Translator() {
   return (
@@ -21,14 +21,13 @@ export function Translator() {
 
 function TranslatorPanes() {
   const { lastSuccess, request } = useTranslatorSession();
-  const { keyboardOpen } = useTranslatorEditor();
   const translation = lastSuccess?.translation ?? "";
   const hasTranslation = request.status === "idle" && translation === "";
   return (
     <div
       className={cn(
         "grid min-h-0 flex-1 grid-rows-[1fr_1fr] p-3 md:grid-cols-2 md:grid-rows-[1fr] md:gap-6",
-        (keyboardOpen || hasTranslation) && "grid-rows-[1fr]",
+        hasTranslation && "grid-rows-[1fr]",
       )}
     >
       <SourceEditor />
