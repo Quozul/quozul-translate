@@ -1,6 +1,5 @@
 "use client";
 
-import { Button } from "@/components/ui/button";
 import {
   Select,
   SelectContent,
@@ -14,7 +13,6 @@ import {
   SheetDescription,
   SheetHeader,
   SheetTitle,
-  SheetTrigger,
 } from "@/components/ui/sheet";
 import {
   MODEL_FAMILIES,
@@ -25,11 +23,10 @@ import {
   type ModelFamilyId,
   type ModelPreset,
 } from "@/lib/models";
-import { EllipsisVerticalIcon } from "lucide-react";
 
 interface SettingsSheetProps {
-  open?: boolean;
-  onOpenChange?: (open: boolean) => void;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
   family: ModelFamilyId;
   preset: ModelPreset;
   onFamilyChange: (family: ModelFamilyId) => void;
@@ -46,19 +43,6 @@ export function SettingsSheet({
 }: SettingsSheetProps) {
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetTrigger
-        render={
-          <Button
-            type="button"
-            variant="ghost"
-            size="icon"
-            aria-label="Settings"
-            title="Settings"
-          />
-        }
-      >
-        <EllipsisVerticalIcon />
-      </SheetTrigger>
       <SheetContent side="bottom" className="max-h-[80dvh]">
         <SheetHeader>
           <SheetTitle>Settings</SheetTitle>
