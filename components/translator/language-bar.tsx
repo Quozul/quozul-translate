@@ -27,7 +27,7 @@ export function LanguageBar() {
       <div className="min-w-0 flex-1">
         <LanguagePicker
           selected={source}
-          frequent={[]}
+          frequent={frequent}
           onSelect={changeSource}
           ariaLabel="Source language"
           detect={DETECT_OPTION}
