@@ -63,7 +63,6 @@ export function usePasteFeedback(
           return;
         }
         apply.current(value);
-        toast.add({ title: "Pasted from clipboard", type: "success" });
       })
       .catch(() => {
         toast.add({
