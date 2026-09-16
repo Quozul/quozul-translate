@@ -14,10 +14,10 @@ OpenAI-compatible completion server (MiLMMT / Hy-MT2 builds) behind
 
 ## Environment variables
 
-| Variable                | Purpose                                             | Default                        |
-| ----------------------- | --------------------------------------------------- | ------------------------------ |
-| `OPENAI_API_KEY`        | Required; requests fail with 503 when unset         | —                              |
-| `TRANSLATION_BASE_URL`  | OpenAI-compatible base URL                          | `http://127.0.0.1:9931/v1`     |
+| Variable               | Purpose                                     | Default                    |
+| ---------------------- | ------------------------------------------- | -------------------------- |
+| `OPENAI_API_KEY`       | Required; requests fail with 503 when unset | —                          |
+| `TRANSLATION_BASE_URL` | OpenAI-compatible base URL                  | `http://127.0.0.1:9931/v1` |
 
 ## Commands
 
@@ -26,6 +26,8 @@ pnpm dev          # dev server
 pnpm test         # vitest: request lifecycle, reducer, policies, cache
 pnpm typecheck    # tsc --noEmit
 pnpm lint         # eslint (next/core-web-vitals + typescript)
+pnpm format       # prettier --write (default settings)
+pnpm format:check # prettier --check
 pnpm build        # production build
 ```
 
@@ -35,7 +37,7 @@ pnpm build        # production build
   on desktop and mobile alike.
 - **IME composition** never fires intermediate requests; work resumes when
   composition ends.
-- **Model selection** in Settings is a *preference*, not a guarantee: if
+- **Model selection** in Settings is a _preference_, not a guarantee: if
   the selected family cannot serve the language pair (e.g. MiLMMT without
   an explicit source — MiLMMT names the source language in its prompt and
   has no detection mode), the request falls back to a family that can, in

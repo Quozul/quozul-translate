@@ -4,7 +4,10 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { languageByName } from "@/lib/languages";
 import { CopyIcon } from "lucide-react";
-import { useTranslatorActions, useTranslatorSession } from "./translator-context";
+import {
+  useTranslatorActions,
+  useTranslatorSession,
+} from "./translator-context";
 import { useCopyFeedback } from "./use-clipboard-feedback";
 
 export function TranslationOutput() {

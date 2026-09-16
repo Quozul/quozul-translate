@@ -61,7 +61,8 @@ export function LanguagePicker({
   const inputValue = query ?? itemToStringLabel(selected);
 
   const groups = useMemo(
-    () => getLanguageGroups({ query: query ?? "", frequent, detection: detect }),
+    () =>
+      getLanguageGroups({ query: query ?? "", frequent, detection: detect }),
     [query, frequent, detect],
   );
 

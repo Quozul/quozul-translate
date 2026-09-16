@@ -225,12 +225,14 @@ export function useTranslatorController(): {
   );
 
   const changeFamily = useCallback(
-    (value: ModelFamilyId) => applyInput({ type: "familyChanged", family: value }),
+    (value: ModelFamilyId) =>
+      applyInput({ type: "familyChanged", family: value }),
     [applyInput],
   );
 
   const changePreset = useCallback(
-    (value: ModelPreset) => applyInput({ type: "presetChanged", preset: value }),
+    (value: ModelPreset) =>
+      applyInput({ type: "presetChanged", preset: value }),
     [applyInput],
   );
 

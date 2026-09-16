@@ -101,10 +101,14 @@ export function SettingsSheet({
             <Select
               value={preset}
               items={Object.fromEntries(
-                MODEL_PRESETS.map((entry) => [entry, MODEL_PRESET_LABELS[entry]]),
+                MODEL_PRESETS.map((entry) => [
+                  entry,
+                  MODEL_PRESET_LABELS[entry],
+                ]),
               )}
               onValueChange={(value) => {
-                if (value !== null && isModelPreset(value)) onPresetChange(value);
+                if (value !== null && isModelPreset(value))
+                  onPresetChange(value);
               }}
             >
               <SelectTrigger

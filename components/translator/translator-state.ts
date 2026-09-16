@@ -143,7 +143,10 @@ function pendingFor(
   return { status: "waiting" };
 }
 
-function edited(state: TranslatorState, inputs: TranslatorInputs): TranslatorState {
+function edited(
+  state: TranslatorState,
+  inputs: TranslatorInputs,
+): TranslatorState {
   if (sameInputs(state.inputs, inputs)) return state;
   const request = pendingFor(inputs, state.lastSuccess, state.composing);
   return {
@@ -306,8 +309,7 @@ export function getTranslationPresentation(
 ): TranslationPresentation {
   const translated = lastSuccess?.translation ?? "";
   const busy = request.status === "waiting" || request.status === "loading";
-  const stale =
-    lastSuccess !== null && request.status !== "ready";
+  const stale = lastSuccess !== null && request.status !== "ready";
 
   let statusMessage = "";
   if (busy) {

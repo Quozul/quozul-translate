@@ -48,7 +48,9 @@ describe("TranslateGemma family", () => {
   it("serves the three TranslateGemma checkpoints", () => {
     expect(translategemma().sourcePolicy).toBe("required");
     expect(translategemma().models.turbo).toBe("local/translategemma-4b-it");
-    expect(translategemma().models.balanced).toBe("local/translategemma-12b-it");
+    expect(translategemma().models.balanced).toBe(
+      "local/translategemma-12b-it",
+    );
     expect(translategemma().models.quality).toBe("local/translategemma-27b-it");
   });
 

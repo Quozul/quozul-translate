@@ -11,12 +11,13 @@ import {
 
 const TranslatorPreferencesContext =
   createContext<TranslatorPreferencesSlice | null>(null);
-const TranslatorEditorContext =
-  createContext<TranslatorEditorSlice | null>(null);
-const TranslatorSessionContext =
-  createContext<TranslatorSessionSlice | null>(null);
-const TranslatorActionsContext =
-  createContext<TranslatorActions | null>(null);
+const TranslatorEditorContext = createContext<TranslatorEditorSlice | null>(
+  null,
+);
+const TranslatorSessionContext = createContext<TranslatorSessionSlice | null>(
+  null,
+);
+const TranslatorActionsContext = createContext<TranslatorActions | null>(null);
 
 export function TranslatorProvider({ children }: { children: ReactNode }) {
   const { preferencesSlice, editorSlice, sessionSlice, actions } =
@@ -34,10 +35,7 @@ export function TranslatorProvider({ children }: { children: ReactNode }) {
   );
 }
 
-function useSlice<T>(
-  context: React.Context<T | null>,
-  hookName: string,
-): T {
+function useSlice<T>(context: React.Context<T | null>, hookName: string): T {
   const value = useContext(context);
   if (!value) {
     throw new Error(`${hookName} must be used inside TranslatorProvider`);
@@ -46,10 +44,7 @@ function useSlice<T>(
 }
 
 export function useTranslatorPreferences(): TranslatorPreferencesSlice {
-  return useSlice(
-    TranslatorPreferencesContext,
-    "useTranslatorPreferences",
-  );
+  return useSlice(TranslatorPreferencesContext, "useTranslatorPreferences");
 }
 
 export function useTranslatorEditor(): TranslatorEditorSlice {

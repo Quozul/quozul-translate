@@ -55,11 +55,7 @@ describe("translator reducer — invariants", () => {
   });
 
   it("clearing input returns to idle and clears the previous output", () => {
-    let state = succeed(
-      type(createInitialState(), "hello"),
-      1,
-      "bonjour",
-    );
+    let state = succeed(type(createInitialState(), "hello"), 1, "bonjour");
     state = type(state, "");
     expect(state.request).toEqual({ status: "idle" });
     expect(state.lastSuccess).toBeNull();
@@ -98,11 +94,17 @@ describe("translator reducer — invariants", () => {
 
   it("stores model provenance and clears it when a newer result lacks one", () => {
     let state = type(createInitialState(), "hello");
-    state = succeed(state, 1, "bonjour", {}, {
-      model: "MiLMMT (Balanced)",
-      durationMs: 812,
-      cached: true,
-    });
+    state = succeed(
+      state,
+      1,
+      "bonjour",
+      {},
+      {
+        model: "MiLMMT (Balanced)",
+        durationMs: 812,
+        cached: true,
+      },
+    );
     expect(state.lastSuccess?.attribution).toEqual({
       model: "MiLMMT (Balanced)",
       durationMs: 812,
@@ -138,7 +140,10 @@ describe("translator reducer — composition scheduling", () => {
     let state = type(createInitialState(), "ひ");
     state = translatorReducer(state, { type: "compositionStarted" });
     expect(state.request).toEqual({ status: "paused", reason: "composition" });
-    state = translatorReducer(state, { type: "compositionEnded", text: "日本語" });
+    state = translatorReducer(state, {
+      type: "compositionEnded",
+      text: "日本語",
+    });
     expect(state.request).toEqual({ status: "waiting" });
     expect(state.inputs.text).toBe("日本語");
   });
@@ -158,7 +163,10 @@ describe("translator reducer — cross-field rules", () => {
       source: "English",
     });
     expect(state.inputs.source).toBe("English");
-    state = translatorReducer(state, { type: "familyChanged", family: "hy-mt2" });
+    state = translatorReducer(state, {
+      type: "familyChanged",
+      family: "hy-mt2",
+    });
     expect(state.inputs.source).toBe("English");
   });
 
@@ -167,7 +175,10 @@ describe("translator reducer — cross-field rules", () => {
       type: "sourceChanged",
       source: "English",
     });
-    state = translatorReducer(state, { type: "familyChanged", family: "milmmt" });
+    state = translatorReducer(state, {
+      type: "familyChanged",
+      family: "milmmt",
+    });
     expect(state.inputs.source).toBe("English");
   });
 
@@ -189,7 +200,10 @@ describe("translator reducer — cross-field rules", () => {
       type: "familyChanged",
       family: "milmmt",
     });
-    state = translatorReducer(state, { type: "sourceChanged", source: "detect" });
+    state = translatorReducer(state, {
+      type: "sourceChanged",
+      source: "detect",
+    });
     expect(state.inputs.family).toBe("milmmt");
     expect(state.inputs.source).toBe("detect");
   });
@@ -251,7 +265,10 @@ describe("translator reducer — swapping languages", () => {
       type: "sourceChanged",
       source: "English",
     });
-    state = translatorReducer(state, { type: "targetChanged", target: "French" });
+    state = translatorReducer(state, {
+      type: "targetChanged",
+      target: "French",
+    });
     const swappedState = swap(type(state, "hello"));
     expect(swappedState.inputs.source).toBe("French");
     expect(swappedState.inputs.target).toBe("English");
@@ -259,7 +276,10 @@ describe("translator reducer — swapping languages", () => {
   });
 
   it("keeps a draft whose translation is no longer current", () => {
-    const stale = type(translatedTo("English", "French", "hello", "bonjour"), "hi");
+    const stale = type(
+      translatedTo("English", "French", "hello", "bonjour"),
+      "hi",
+    );
     expect(swap(stale).inputs.text).toBe("hi");
   });
 });
@@ -344,12 +364,10 @@ describe("presentation selector", () => {
 
   it("shows a skeleton only while busy without output", () => {
     const loading = { status: "loading", requestId: 1 } as const;
-    expect(
-      getTranslationPresentation(loading, null).showSkeleton,
-    ).toBe(true);
-    expect(
-      getTranslationPresentation(loading, success).showSkeleton,
-    ).toBe(false);
+    expect(getTranslationPresentation(loading, null).showSkeleton).toBe(true);
+    expect(getTranslationPresentation(loading, success).showSkeleton).toBe(
+      false,
+    );
   });
 
   it("labels retained output while a new request runs", () => {
@@ -380,7 +398,11 @@ describe("presentation selector", () => {
   it("names the model, duration, and cache state once ready", () => {
     const p = getTranslationPresentation(
       { status: "ready" },
-      attributed({ model: "MiLMMT (Balanced)", durationMs: 812, cached: false }),
+      attributed({
+        model: "MiLMMT (Balanced)",
+        durationMs: 812,
+        cached: false,
+      }),
     );
     expect(p.statusMessage).toBe("Translated by MiLMMT (Balanced) in 812ms");
   });
@@ -390,13 +412,19 @@ describe("presentation selector", () => {
       { status: "ready" },
       attributed({ model: "Hy-MT2 (Turbo)", durationMs: 3, cached: true }),
     );
-    expect(p.statusMessage).toBe("Translated by Hy-MT2 (Turbo) in 3ms (cached)");
+    expect(p.statusMessage).toBe(
+      "Translated by Hy-MT2 (Turbo) in 3ms (cached)",
+    );
   });
 
   it("keeps the retained-output label while a new request runs", () => {
     const p = getTranslationPresentation(
       { status: "loading", requestId: 3 },
-      attributed({ model: "MiLMMT (Balanced)", durationMs: 812, cached: false }),
+      attributed({
+        model: "MiLMMT (Balanced)",
+        durationMs: 812,
+        cached: false,
+      }),
     );
     expect(p.statusMessage).toBe("Translating…");
   });

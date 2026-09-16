@@ -223,8 +223,6 @@ describe("translation engine request ownership", () => {
     sent[0].completion.reject(new TranslationFailure("old failed"));
     sent[1].completion.resolve("B!");
     await flush();
-    expect(results).toEqual([
-      { id: 2, target: "French", translation: "B!" },
-    ]);
+    expect(results).toEqual([{ id: 2, target: "French", translation: "B!" }]);
   });
 });

@@ -92,7 +92,9 @@ export async function requestTranslation(
   }
 
   if (!response.ok) {
-    const failureBody = (await readJson(response)) as { error?: unknown } | null;
+    const failureBody = (await readJson(response)) as {
+      error?: unknown;
+    } | null;
     throw new TranslationFailure(
       typeof failureBody?.error === "string" && failureBody.error !== ""
         ? failureBody.error

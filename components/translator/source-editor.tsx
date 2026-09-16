@@ -51,7 +51,10 @@ export function SourceEditor() {
   };
 
   return (
-    <section className="relative flex min-h-0 flex-col" aria-label="Source text">
+    <section
+      className="relative flex min-h-0 flex-col"
+      aria-label="Source text"
+    >
       <div className="absolute top-1 right-1 z-10 flex items-center text-muted-foreground">
         <Button
           type="button"

@@ -43,7 +43,11 @@ export const translationResponseBodySchema = z.object({
   durationMs: z.number().optional(),
 });
 
-export type TranslationRequestBody = z.infer<typeof translationRequestBodySchema>;
-export type TranslationResponseBody = z.infer<typeof translationResponseBodySchema>;
+export type TranslationRequestBody = z.infer<
+  typeof translationRequestBodySchema
+>;
+export type TranslationResponseBody = z.infer<
+  typeof translationResponseBodySchema
+>;
 
 export { DEFAULT_FAMILY, DEFAULT_PRESET };

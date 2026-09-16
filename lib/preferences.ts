@@ -37,12 +37,14 @@ interface StoredPreferences {
   model?: unknown;
 }
 
-const LEGACY_MODELS: Record<string, { family: ModelFamilyId; preset: ModelPreset }> =
-  {
-    fast: { family: "hy-mt2", preset: "turbo" },
-    quality: { family: "hy-mt2", preset: "balanced" },
-    turbo: { family: "hy-mt2", preset: "quality" },
-  };
+const LEGACY_MODELS: Record<
+  string,
+  { family: ModelFamilyId; preset: ModelPreset }
+> = {
+  fast: { family: "hy-mt2", preset: "turbo" },
+  quality: { family: "hy-mt2", preset: "balanced" },
+  turbo: { family: "hy-mt2", preset: "quality" },
+};
 
 function fallbackPreferences(): Preferences {
   return {
@@ -85,7 +87,9 @@ export function parseTranslationPreferences(value: unknown): Preferences {
   }
   if (!family) {
     const legacy =
-      typeof stored.model === "string" ? LEGACY_MODELS[stored.model] : undefined;
+      typeof stored.model === "string"
+        ? LEGACY_MODELS[stored.model]
+        : undefined;
     if (legacy) {
       family = legacy.family;
       preset = legacy.preset;
@@ -109,7 +113,13 @@ export function parseTranslationPreferences(value: unknown): Preferences {
   family = family ?? fallback.family;
   preset = preset ?? fallback.preset;
 
-  return { target, source, family, preset, usage: parseUsage(stored.translation_usage) };
+  return {
+    target,
+    source,
+    family,
+    preset,
+    usage: parseUsage(stored.translation_usage),
+  };
 }
 
 export function loadTranslationPreferences(
@@ -139,8 +149,7 @@ export function saveTranslationPreferences(
   };
   try {
     storage.setItem(PREFERENCES_KEY, JSON.stringify(stored));
-  } catch {
-  }
+  } catch {}
 }
 
 export function getFrequentLanguages(

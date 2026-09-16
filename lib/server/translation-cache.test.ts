@@ -64,8 +64,18 @@ describe("translation cache", () => {
       maxEntries: 100,
       ttlMs: 10_000,
     });
-    const k1 = key({ text: "one", source: "English", target: "French", model: "m" });
-    const k2 = key({ text: "two", source: "English", target: "French", model: "m" });
+    const k1 = key({
+      text: "one",
+      source: "English",
+      target: "French",
+      model: "m",
+    });
+    const k2 = key({
+      text: "two",
+      source: "English",
+      target: "French",
+      model: "m",
+    });
     cache.insert(k1, "longer", 0);
     cache.insert(k1, "x", 1);
     cache.insert(k2, "z", 2);

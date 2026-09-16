@@ -4,8 +4,7 @@ import { cn } from "@/lib/utils";
 import { Toaster } from "@/components/ui/toast";
 import "./globals.css";
 
-const geist = Geist({subsets:['latin'],variable:'--font-sans'});
-
+const geist = Geist({ subsets: ["latin"], variable: "--font-sans" });
 
 export default function RootLayout({
   children,

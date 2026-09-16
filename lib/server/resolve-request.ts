@@ -27,7 +27,11 @@ export function resolveRequest(body: TranslationRequestBody): SanitizedRequest {
   const text = normalizeTranslationText(body.text);
   const issue = validateTranslationInput(text);
   if (issue?.code === "too_long") {
-    throw new ApiError("TEXT_TOO_LONG", 413, "Text exceeds the maximum length.");
+    throw new ApiError(
+      "TEXT_TOO_LONG",
+      413,
+      "Text exceeds the maximum length.",
+    );
   }
   if (issue) {
     throw new ApiError("INVALID_INPUT", 400, issue.message);
@@ -35,7 +39,11 @@ export function resolveRequest(body: TranslationRequestBody): SanitizedRequest {
 
   const target = languageByName(body.target.trim());
   if (!target) {
-    throw new ApiError("INVALID_INPUT", 400, "Choose a supported target language.");
+    throw new ApiError(
+      "INVALID_INPUT",
+      400,
+      "Choose a supported target language.",
+    );
   }
 
   const rawSource = body.source.trim();
@@ -43,14 +51,22 @@ export function resolveRequest(body: TranslationRequestBody): SanitizedRequest {
   if (rawSource !== "" && rawSource !== DETECT_SOURCE) {
     const resolved = languageByName(rawSource);
     if (!resolved) {
-      throw new ApiError("INVALID_INPUT", 400, "Choose a supported source language.");
+      throw new ApiError(
+        "INVALID_INPUT",
+        400,
+        "Choose a supported source language.",
+      );
     }
     source = resolved;
   }
 
   const requested = familyById(body.family.trim());
   if (!requested) {
-    throw new ApiError("INVALID_INPUT", 400, "Choose a supported model family.");
+    throw new ApiError(
+      "INVALID_INPUT",
+      400,
+      "Choose a supported model family.",
+    );
   }
 
   const family = resolveFamily(requested.id, source?.code ?? null, target.code);

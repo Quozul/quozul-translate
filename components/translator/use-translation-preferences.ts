@@ -24,14 +24,16 @@ export function usePreferenceStore() {
     (
       inputs: Pick<TranslatorInputs, "target" | "source" | "family" | "preset">,
     ): void => {
-    saveTranslationPreferences(browserStorage(), {
-      target: inputs.target,
-      source: inputs.source,
-      family: inputs.family,
-      preset: inputs.preset,
-      usage: usageRef.current,
-    });
-  }, []);
+      saveTranslationPreferences(browserStorage(), {
+        target: inputs.target,
+        source: inputs.source,
+        family: inputs.family,
+        preset: inputs.preset,
+        usage: usageRef.current,
+      });
+    },
+    [],
+  );
 
   const recordTranslation = useCallback((target: string): string[] => {
     usageRef.current = {

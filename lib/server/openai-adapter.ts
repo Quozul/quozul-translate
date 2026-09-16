@@ -18,7 +18,11 @@ export type ModelCompletion = (
 export function createCompletionFromEnvironment(): ModelCompletion {
   const apiKey = process.env.OPENAI_API_KEY;
   if (!apiKey) {
-    throw new ApiError("MODEL_UNAVAILABLE", 503, "Translation server is not configured.");
+    throw new ApiError(
+      "MODEL_UNAVAILABLE",
+      503,
+      "Translation server is not configured.",
+    );
   }
   const client = new OpenAI({
     baseURL: process.env.TRANSLATION_BASE_URL ?? DEFAULT_BASE_URL,
@@ -47,12 +51,21 @@ export function createCompletionFromEnvironment(): ModelCompletion {
       if (signal?.aborted) {
         throw error;
       }
-      throw new ApiError("MODEL_UNAVAILABLE", 502, "The model could not translate this text.", {
-        cause: error,
-      });
+      throw new ApiError(
+        "MODEL_UNAVAILABLE",
+        502,
+        "The model could not translate this text.",
+        {
+          cause: error,
+        },
+      );
     }
     if (translated === undefined) {
-      throw new ApiError("INVALID_RESPONSE", 502, "The model could not translate this text.");
+      throw new ApiError(
+        "INVALID_RESPONSE",
+        502,
+        "The model could not translate this text.",
+      );
     }
     return translated;
   };

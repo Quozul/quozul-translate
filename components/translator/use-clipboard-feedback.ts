@@ -27,8 +27,7 @@ export function useCopyFeedback(): CopyFeedback {
       .catch(() => {
         toast.add({
           title: "Could not copy",
-          description:
-            "Select the translation and copy it manually.",
+          description: "Select the translation and copy it manually.",
           type: "error",
         });
       });
@@ -48,7 +47,9 @@ function readClipboardText(): Promise<string> {
  * Reads the clipboard and hands the text to [onText]. A blocked or empty
  * clipboard reports itself instead of looking like a dead button.
  */
-export function usePasteFeedback(onText: (text: string) => void): PasteFeedback {
+export function usePasteFeedback(
+  onText: (text: string) => void,
+): PasteFeedback {
   const apply = useRef(onText);
   useEffect(() => {
     apply.current = onText;

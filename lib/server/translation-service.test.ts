@@ -5,7 +5,9 @@ import { createTranslationCache } from "./translation-cache";
 import { ApiError } from "./errors";
 import type { TranslationRequestBody } from "../translation-contract";
 
-function request(overrides: Partial<TranslationRequestBody> = {}): TranslationRequestBody {
+function request(
+  overrides: Partial<TranslationRequestBody> = {},
+): TranslationRequestBody {
   return {
     text: "hello",
     source: "English",

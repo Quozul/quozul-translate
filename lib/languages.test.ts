@@ -15,11 +15,14 @@ describe("normalizeLanguageQuery", () => {
 
 describe("matchesLanguage", () => {
   it("exact full code selects only that language, not prefixes", () => {
-    expect(matchesLanguage({ name: "Japanese", native: "日本語", code: "ja" }, "ja")).toBe(
-      true,
-    );
     expect(
-      matchesLanguage({ name: "Gujarati", native: "ગુજરાતી", code: "gu" }, "ja"),
+      matchesLanguage({ name: "Japanese", native: "日本語", code: "ja" }, "ja"),
+    ).toBe(true);
+    expect(
+      matchesLanguage(
+        { name: "Gujarati", native: "ગુજરાતી", code: "gu" },
+        "ja",
+      ),
     ).toBe(false);
   });
 
@@ -70,7 +73,11 @@ describe("getLanguageGroups", () => {
   });
 
   it("handles the detection option independently of real languages", () => {
-    const groups = getLanguageGroups({ query: "", frequent: [], detection: DETECT });
+    const groups = getLanguageGroups({
+      query: "",
+      frequent: [],
+      detection: DETECT,
+    });
     expect(groups.detection).toEqual(DETECT);
 
     const filtered = getLanguageGroups({

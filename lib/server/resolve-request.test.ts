@@ -4,7 +4,9 @@ import { ApiError } from "./errors";
 import { cacheKeyFor, resolveRequest } from "./resolve-request";
 import { buildPrompt } from "./prompts";
 
-function request(overrides: Partial<TranslationRequestBody> = {}): TranslationRequestBody {
+function request(
+  overrides: Partial<TranslationRequestBody> = {},
+): TranslationRequestBody {
   return {
     text: "hello world",
     source: "detect",
@@ -138,9 +140,7 @@ describe("buildPrompt", () => {
     );
     expect(sanitized.family.id).toBe("translategemma");
     const prompt = buildPrompt(sanitized);
-    expect(prompt).toContain(
-      "professional English (en) to Central Khmer (km)",
-    );
+    expect(prompt).toContain("professional English (en) to Central Khmer (km)");
     expect(prompt).toContain(
       "Please translate the following English text into Central Khmer:",
     );

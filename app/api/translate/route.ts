@@ -9,11 +9,7 @@ import { translateRequest } from "@/lib/server/translation-service";
 
 export const runtime = "nodejs";
 
-function failure(
-  status: number,
-  message: string,
-  code?: string,
-): NextResponse {
+function failure(status: number, message: string, code?: string): NextResponse {
   return NextResponse.json({ error: message, code }, { status });
 }
 

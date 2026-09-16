@@ -4,7 +4,7 @@ import { cn } from "@/lib/utils";
 import { LanguageBar } from "./language-bar";
 import { SourceEditor } from "./source-editor";
 import { TranslationOutput } from "./translation-output";
-import {TranslatorProvider, useTranslatorSession} from "./translator-context";
+import { TranslatorProvider, useTranslatorSession } from "./translator-context";
 
 export function Translator() {
   return (
@@ -32,7 +32,7 @@ function TranslatorPanes() {
     >
       <SourceEditor />
       <div className={cn(hasTranslation && "hidden md:block")}>
-      <TranslationOutput />
+        <TranslationOutput />
       </div>
     </div>
   );
