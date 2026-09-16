@@ -22,6 +22,7 @@ import type {
   TranslatorInputs,
 } from "./translator-state";
 import {
+  canSwapLanguages,
   createInitialState,
   getTranslationPresentation,
   translatorReducer,
@@ -44,6 +45,8 @@ export interface TranslatorPreferencesSlice {
 export interface TranslatorEditorSlice {
   text: string;
   keyboardOpen: boolean;
+  /** False while the source is auto-detect: there is nothing to swap into the target. */
+  canSwap: boolean;
 }
 
 export interface TranslatorSessionSlice {
@@ -58,6 +61,8 @@ export interface TranslatorActions {
   changeFamily: (value: ModelFamilyId) => void;
   changePreset: (value: ModelPreset) => void;
   changeText: (value: string) => void;
+  appendText: (value: string) => void;
+  swapLanguages: () => void;
   startComposition: () => void;
   endComposition: (value: string) => void;
   clearText: () => void;
@@ -264,6 +269,16 @@ export function useTranslatorController(): {
     [applyInput],
   );
 
+  const appendText = useCallback(
+    (value: string) => applyInput({ type: "textAppended", text: value }),
+    [applyInput],
+  );
+
+  const swapLanguages = useCallback(
+    () => applyInput({ type: "languagesSwapped" }),
+    [applyInput],
+  );
+
   const submit = useCallback(() => {
     const current = latest.current;
     if (current.composing) return;
@@ -289,9 +304,10 @@ export function useTranslatorController(): {
     [target, source, family, preset, frequent],
   );
 
+  const canSwap = canSwapLanguages(inputs);
   const editorSlice = useMemo<TranslatorEditorSlice>(
-    () => ({ text: inputs.text, keyboardOpen }),
-    [inputs.text, keyboardOpen],
+    () => ({ text: inputs.text, keyboardOpen, canSwap }),
+    [inputs.text, keyboardOpen, canSwap],
   );
 
   const presentation = useMemo(
@@ -311,6 +327,8 @@ export function useTranslatorController(): {
       changeFamily,
       changePreset,
       changeText,
+      appendText,
+      swapLanguages,
       startComposition,
       endComposition,
       clearText,
@@ -325,6 +343,8 @@ export function useTranslatorController(): {
       changeFamily,
       changePreset,
       changeText,
+      appendText,
+      swapLanguages,
       startComposition,
       endComposition,
       clearText,

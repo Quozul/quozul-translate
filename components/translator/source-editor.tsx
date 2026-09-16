@@ -5,11 +5,12 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { MAX_TEXT_LENGTH } from "@/lib/translation-contract";
 import { displayedCharacterCount } from "@/lib/translation-text";
-import { XIcon } from "lucide-react";
+import { ClipboardPasteIcon, XIcon } from "lucide-react";
 import {
   useTranslatorActions,
   useTranslatorEditor,
 } from "./translator-context";
+import { usePasteFeedback } from "./use-clipboard-feedback";
 
 const LIMIT_LABEL = MAX_TEXT_LENGTH.toLocaleString("en-US");
 
@@ -17,6 +18,7 @@ export function SourceEditor() {
   const { text, keyboardOpen } = useTranslatorEditor();
   const {
     changeText,
+    appendText,
     startComposition,
     endComposition,
     clearText,
@@ -24,6 +26,7 @@ export function SourceEditor() {
     focusSource,
     blurSource,
   } = useTranslatorActions();
+  const { paste } = usePasteFeedback(appendText);
   const input = useRef<HTMLTextAreaElement>(null);
 
   const charCount = displayedCharacterCount(text);
@@ -53,21 +56,37 @@ export function SourceEditor() {
     input.current?.focus();
   };
 
+  const handlePaste = () => {
+    paste();
+    input.current?.focus();
+  };
+
   return (
     <section className="relative flex min-h-0 flex-col" aria-label="Source text">
-      {text !== "" && (
+      <div className="absolute top-1 right-1 z-10 flex items-center text-muted-foreground">
         <Button
           type="button"
           variant="ghost"
           size="icon"
-          className="absolute top-1 right-1 z-10 text-muted-foreground"
-          aria-label="Clear"
-          title="Clear"
-          onClick={handleClear}
+          aria-label="Paste from clipboard"
+          title="Paste from clipboard"
+          onClick={handlePaste}
         >
-          <XIcon />
+          <ClipboardPasteIcon />
         </Button>
-      )}
+        {text !== "" && (
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            aria-label="Clear"
+            title="Clear"
+            onClick={handleClear}
+          >
+            <XIcon />
+          </Button>
+        )}
+      </div>
       <Textarea
         id="source"
         ref={input}

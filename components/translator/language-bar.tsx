@@ -1,5 +1,6 @@
 "use client";
 
+import { Button } from "@/components/ui/button";
 import { LanguagePicker } from "@/components/language-picker";
 import { DETECT_SOURCE } from "@/lib/models";
 import {
@@ -8,14 +9,15 @@ import {
   useTranslatorPreferences,
 } from "./translator-context";
 import { TranslatorSettings } from "./translator-settings";
-import { ArrowRightIcon } from "lucide-react";
+import { ArrowLeftRightIcon } from "lucide-react";
 
 const DETECT_OPTION = { value: DETECT_SOURCE, label: "Detect language" };
 
 export function LanguageBar() {
   const { source, target, frequent } = useTranslatorPreferences();
-  const { keyboardOpen } = useTranslatorEditor();
-  const { changeSource, chooseLanguage } = useTranslatorActions();
+  const { keyboardOpen, canSwap } = useTranslatorEditor();
+  const { changeSource, chooseLanguage, swapLanguages } =
+    useTranslatorActions();
 
   return (
     <div
@@ -31,9 +33,18 @@ export function LanguageBar() {
           detect={DETECT_OPTION}
         />
       </div>
-      <span aria-hidden="true" className="text-muted-foreground">
-        <ArrowRightIcon />
-      </span>
+      <Button
+        type="button"
+        variant="ghost"
+        size="icon"
+        className="shrink-0 text-muted-foreground"
+        aria-label="Swap languages"
+        title={canSwap ? "Swap languages" : "Choose a source language to swap"}
+        disabled={!canSwap}
+        onClick={swapLanguages}
+      >
+        <ArrowLeftRightIcon />
+      </Button>
       <div className="min-w-0 flex-1">
         <LanguagePicker
           selected={target}

@@ -1,3 +1,4 @@
+import { languageByName } from "@/lib/languages";
 import {
   DEFAULT_FAMILY,
   DEFAULT_PRESET,
@@ -63,6 +64,8 @@ export type TranslatorEvent =
   | { type: "textChanged"; text: string }
   | { type: "targetChanged"; target: string }
   | { type: "sourceChanged"; source: SourceLanguage }
+  | { type: "languagesSwapped" }
+  | { type: "textAppended"; text: string }
   | { type: "familyChanged"; family: ModelFamilyId }
   | { type: "presetChanged"; preset: ModelPreset }
   | { type: "compositionStarted" }
@@ -95,6 +98,18 @@ export function sameInputs(a: TranslatorInputs, b: TranslatorInputs): boolean {
     a.target === b.target &&
     a.family === b.family &&
     a.preset === b.preset
+  );
+}
+
+/**
+ * Whether the two language pickers can trade places. Auto-detect has no
+ * language to move into the target slot, so a detect source cannot swap.
+ */
+export function canSwapLanguages(inputs: TranslatorInputs): boolean {
+  return (
+    inputs.source !== DETECT_SOURCE &&
+    languageByName(inputs.source) !== undefined &&
+    languageByName(inputs.target) !== undefined
   );
 }
 
@@ -157,6 +172,35 @@ export function translatorReducer(
 
     case "sourceChanged":
       return edited(state, { ...state.inputs, source: event.source });
+
+    case "languagesSwapped": {
+      if (!canSwapLanguages(state.inputs)) return state;
+      // The finished translation becomes the new draft so the reverse
+      // direction starts from the text that was just produced. While a result
+      // is still in flight (or failed) the draft the user typed is kept.
+      const translated = state.lastSuccess?.translation ?? "";
+      const text =
+        state.request.status === "ready" && translated !== ""
+          ? translated
+          : state.inputs.text;
+      return edited(state, {
+        ...state.inputs,
+        text,
+        source: state.inputs.target,
+        target: state.inputs.source,
+      });
+    }
+
+    case "textAppended": {
+      // Pasting never replaces a draft: the clipboard text is added below it.
+      if (event.text === "") return state;
+      const current = state.inputs.text;
+      const separator = current === "" || current.endsWith("\n") ? "" : "\n";
+      return edited(state, {
+        ...state.inputs,
+        text: `${current}${separator}${event.text}`,
+      });
+    }
 
     case "familyChanged": {
       if (!familyById(event.family)) return state;

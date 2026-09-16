@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  canSwapLanguages,
   createInitialState,
   getTranslationPresentation,
   translatorReducer,
@@ -8,6 +9,7 @@ import {
   type TranslatorState,
   type TranslatorInputs,
 } from "./translator-state";
+import { DETECT_SOURCE } from "@/lib/models";
 
 const BASE_INPUTS: TranslatorInputs = {
   text: "",
@@ -244,6 +246,97 @@ describe("translator reducer — cross-field rules", () => {
   it("no-ops identical input changes", () => {
     const state = type(createInitialState(), "same");
     expect(type(state, "same")).toBe(state);
+  });
+});
+
+describe("translator reducer — swapping languages", () => {
+  function swap(state: TranslatorState): TranslatorState {
+    return translatorReducer(state, { type: "languagesSwapped" });
+  }
+
+  function translatedTo(
+    source: string,
+    target: string,
+    text: string,
+    translation: string,
+  ): TranslatorState {
+    let state = translatorReducer(createInitialState(), {
+      type: "sourceChanged",
+      source,
+    });
+    state = translatorReducer(state, { type: "targetChanged", target });
+    return succeed(type(state, text), 1, translation);
+  }
+
+  it("trades languages and moves the translation into the editor", () => {
+    const state = swap(translatedTo("English", "French", "hello", "bonjour"));
+    expect(state.inputs.source).toBe("French");
+    expect(state.inputs.target).toBe("English");
+    expect(state.inputs.text).toBe("bonjour");
+    // The reverse direction has to be translated, so a request is scheduled.
+    expect(state.request).toEqual({ status: "waiting" });
+  });
+
+  it("is offered only for an explicit source language", () => {
+    expect(
+      canSwapLanguages({ ...BASE_INPUTS, source: "English", target: "French" }),
+    ).toBe(true);
+    expect(canSwapLanguages({ ...BASE_INPUTS, source: DETECT_SOURCE })).toBe(
+      false,
+    );
+    expect(
+      canSwapLanguages({ ...BASE_INPUTS, source: "Klingon", target: "French" }),
+    ).toBe(false);
+  });
+
+  it("refuses to swap auto-detect away", () => {
+    const before = translatedTo(DETECT_SOURCE, "French", "hello", "bonjour");
+    expect(swap(before)).toBe(before);
+    expect(before.inputs.source).toBe(DETECT_SOURCE);
+  });
+
+  it("keeps the draft when no finished translation exists yet", () => {
+    let state = translatorReducer(createInitialState(), {
+      type: "sourceChanged",
+      source: "English",
+    });
+    state = translatorReducer(state, { type: "targetChanged", target: "French" });
+    const swappedState = swap(type(state, "hello"));
+    expect(swappedState.inputs.source).toBe("French");
+    expect(swappedState.inputs.target).toBe("English");
+    expect(swappedState.inputs.text).toBe("hello");
+  });
+
+  it("keeps a draft whose translation is no longer current", () => {
+    const stale = type(translatedTo("English", "French", "hello", "bonjour"), "hi");
+    expect(swap(stale).inputs.text).toBe("hi");
+  });
+});
+
+describe("translator reducer — pasting", () => {
+  function append(state: TranslatorState, text: string): TranslatorState {
+    return translatorReducer(state, { type: "textAppended", text });
+  }
+
+  it("fills an empty editor", () => {
+    const state = append(createInitialState(), "hello");
+    expect(state.inputs.text).toBe("hello");
+    expect(state.request).toEqual({ status: "waiting" });
+  });
+
+  it("adds clipboard text below an existing draft", () => {
+    const state = append(type(createInitialState(), "hello"), "bonjour");
+    expect(state.inputs.text).toBe("hello\nbonjour");
+  });
+
+  it("does not stack blank lines after a trailing newline", () => {
+    const state = append(type(createInitialState(), "hello\n"), "bonjour");
+    expect(state.inputs.text).toBe("hello\nbonjour");
+  });
+
+  it("ignores an empty clipboard", () => {
+    const state = type(createInitialState(), "hello");
+    expect(append(state, "")).toBe(state);
   });
 });
 
