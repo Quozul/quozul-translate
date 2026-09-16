@@ -8,7 +8,7 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { SettingsSheet } from "@/components/settings-sheet";
+import { SettingsDialog } from "@/components/settings-dialog";
 import {
   useTranslatorActions,
   useTranslatorPreferences,
@@ -55,7 +55,7 @@ export function TranslatorSettings() {
           </KbdGroup>
         </TooltipContent>
       </Tooltip>
-      <SettingsSheet
+      <SettingsDialog
         open={open}
         onOpenChange={setOpen}
         family={family}

@@ -8,12 +8,12 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import {
-  Sheet,
-  SheetContent,
-  SheetDescription,
-  SheetHeader,
-  SheetTitle,
-} from "@/components/ui/sheet";
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import {
   MODEL_FAMILIES,
   MODEL_PRESET_LABELS,
@@ -24,7 +24,7 @@ import {
   type ModelPreset,
 } from "@/lib/models";
 
-interface SettingsSheetProps {
+interface SettingsDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   family: ModelFamilyId;
@@ -33,24 +33,24 @@ interface SettingsSheetProps {
   onPresetChange: (preset: ModelPreset) => void;
 }
 
-export function SettingsSheet({
+export function SettingsDialog({
   open,
   onOpenChange,
   family,
   preset,
   onFamilyChange,
   onPresetChange,
-}: SettingsSheetProps) {
+}: SettingsDialogProps) {
   return (
-    <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent side="bottom" className="max-h-[80dvh]">
-        <SheetHeader>
-          <SheetTitle>Settings</SheetTitle>
-          <SheetDescription>
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Settings</DialogTitle>
+          <DialogDescription>
             Choose the model family and size used for translations.
-          </SheetDescription>
-        </SheetHeader>
-        <div className="space-y-6 px-4 pb-6">
+          </DialogDescription>
+        </DialogHeader>
+        <div className="flex flex-col gap-4">
           <div>
             <p className="mb-2 text-sm font-medium">
               <label htmlFor="model-family">Model family</label>
@@ -112,7 +112,7 @@ export function SettingsSheet({
             </Select>
           </div>
         </div>
-      </SheetContent>
-    </Sheet>
+      </DialogContent>
+    </Dialog>
   );
 }
