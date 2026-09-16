@@ -4,6 +4,23 @@
 
 @custom-variant dark (&:is(.dark *));
 
+@theme {
+  --animate-dot-bounce: dot-bounce 1s infinite ease-in-out;
+
+  @keyframes dot-bounce {
+    0%,
+    60%,
+    100% {
+      transform: translateY(0);
+      opacity: 0.4;
+    }
+    30% {
+      transform: translateY(-0.35em);
+      opacity: 1;
+    }
+  }
+}
+
 @theme inline {
   --font-heading: var(--font-sans);
   --font-sans: var(--font-sans);

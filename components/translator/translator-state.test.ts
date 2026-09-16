@@ -367,25 +367,26 @@ describe("presentation selector", () => {
 
   it("stays quiet when idle", () => {
     const p = getTranslationPresentation({ status: "idle" }, null);
-    expect(p.showSkeleton).toBe(false);
+    expect(p.busy).toBe(false);
     expect(p.statusMessage).toBe("");
     expect(p.errorMessage).toBe("");
   });
 
-  it("shows a skeleton only while busy without output", () => {
+  it("is busy while waiting or loading", () => {
     const loading = { status: "loading", requestId: 1 } as const;
-    expect(getTranslationPresentation(loading, null).showSkeleton).toBe(true);
-    expect(getTranslationPresentation(loading, success).showSkeleton).toBe(
-      false,
+    expect(getTranslationPresentation(loading, null).busy).toBe(true);
+    expect(getTranslationPresentation(loading, success).busy).toBe(true);
+    expect(getTranslationPresentation({ status: "waiting" }, null).busy).toBe(
+      true,
     );
   });
 
-  it("labels retained output while a new request runs", () => {
+  it("leaves the status line empty while a new request runs", () => {
     const p = getTranslationPresentation(
       { status: "loading", requestId: 2 },
       success,
     );
-    expect(p.statusMessage).toBe("Translating…");
+    expect(p.statusMessage).toBe("");
     expect(p.isStale).toBe(true);
   });
 
@@ -440,7 +441,7 @@ describe("presentation selector", () => {
     );
   });
 
-  it("keeps the retained-output label while a new request runs", () => {
+  it("leaves the status line empty while a new request runs over attributed output", () => {
     const p = getTranslationPresentation(
       { status: "loading", requestId: 3 },
       attributed({
@@ -449,6 +450,6 @@ describe("presentation selector", () => {
         cached: false,
       }),
     );
-    expect(p.statusMessage).toBe("Translating…");
+    expect(p.statusMessage).toBe("");
   });
 });

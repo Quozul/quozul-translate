@@ -7,13 +7,15 @@ import {
   useTranslatorPreferences,
 } from "./translator-context";
 import { TranslatorSettings } from "./translator-settings";
-import { SwapLanguages } from "@/components/translator/swap-languages";
+import {SwapLanguages} from "@/components/translator/swap-languages";
 
 const DETECT_OPTION = { value: DETECT_SOURCE, label: "Detect language" };
 
 export function LanguageBar() {
   const { source, target, frequent } = useTranslatorPreferences();
-  const { changeSource, chooseLanguage } = useTranslatorActions();
+  const { changeSource, chooseLanguage } =
+    useTranslatorActions();
+
 
   return (
     <div className="flex items-center gap-2 border-b px-3 py-2">
@@ -26,7 +28,7 @@ export function LanguageBar() {
           detect={DETECT_OPTION}
         />
       </div>
-      <SwapLanguages />
+      <SwapLanguages/>
       <div className="min-w-0 flex-1">
         <LanguagePicker
           selected={target}

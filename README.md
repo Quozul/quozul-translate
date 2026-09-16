@@ -14,10 +14,10 @@ OpenAI-compatible completion server (MiLMMT / Hy-MT2 builds) behind
 
 ## Environment variables
 
-| Variable               | Purpose                                     | Default                    |
-| ---------------------- | ------------------------------------------- | -------------------------- |
-| `OPENAI_API_KEY`       | Required; requests fail with 503 when unset | —                          |
-| `OPENAI_BASE_URL`      | OpenAI-compatible base URL                  | `http://127.0.0.1:9931/v1` |
+| Variable          | Purpose                                     | Default                    |
+| ----------------- | ------------------------------------------- | -------------------------- |
+| `OPENAI_API_KEY`  | Required; requests fail with 503 when unset | —                          |
+| `OPENAI_BASE_URL` | OpenAI-compatible base URL                  | `http://127.0.0.1:9931/v1` |
 
 ## Commands
 
@@ -59,7 +59,10 @@ pnpm build        # production build
   Node process and resets on restart/module reload.
 - **Status line** (`components/translator/translation-output.tsx`) sits
   below the translated text, together with loading and error messages.
-  When the text is ready it reads
+  While a translation is in progress there is no status text: three dots
+  bounce after the existing translation (or after the `Translation`
+  empty-state placeholder when none exists yet). When the text is ready the
+  status line reads
   `Translated by <family> (<preset>) in <duration>ms (cached)` — for
   example `Translated by MiLMMT (Balanced) in 812ms`. `durationMs` comes
   from the server; if a response omits it, the client falls back to its

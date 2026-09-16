@@ -1,7 +1,6 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
-import { Skeleton } from "@/components/ui/skeleton";
 import { languageByName } from "@/lib/languages";
 import { CopyIcon } from "lucide-react";
 import {
@@ -11,29 +10,21 @@ import {
 import { useCopyFeedback } from "./use-clipboard-feedback";
 
 export function TranslationOutput() {
-  const { request, lastSuccess, presentation } = useTranslatorSession();
+  const { lastSuccess, presentation } = useTranslatorSession();
   const { retry } = useTranslatorActions();
   const { copy } = useCopyFeedback();
 
   const translated = lastSuccess?.translation ?? "";
   const resultTarget = lastSuccess?.inputs.target ?? "";
   const resultLanguage = languageByName(resultTarget);
-  const showPlaceholder = translated === "" && !presentation.showSkeleton;
+  const showPlaceholder = translated === "";
 
   return (
     <section
       className="min-h-0 overflow-y-auto pt-3 md:pt-0"
       aria-label="Translation"
-      aria-busy={request.status === "loading"}
+      aria-busy={presentation.busy}
     >
-      {presentation.showSkeleton && (
-        <div className="flex flex-col gap-3.5" aria-hidden="true">
-          <Skeleton className="h-3.5 w-full" />
-          <Skeleton className="h-3.5 w-[90%]" />
-          <Skeleton className="h-3.5 w-[65%]" />
-        </div>
-      )}
-
       {translated !== "" && (
         <>
           <p
@@ -43,6 +34,7 @@ export function TranslationOutput() {
             className="text-2xl leading-normal wrap-break-word whitespace-pre-wrap"
           >
             {translated}
+            {presentation.busy && <BouncingDots />}
           </p>
           <div className="mt-3 flex justify-end">
             <Button
@@ -61,18 +53,21 @@ export function TranslationOutput() {
 
       {showPlaceholder && (
         <p className="text-2xl wrap-break-word text-muted-foreground">
-          Translation appears here
+          Translation
+          {presentation.busy && <BouncingDots />}
         </p>
       )}
 
-      <div
-        role="status"
-        aria-live="polite"
-        aria-atomic="true"
-        className="mt-3 text-sm text-muted-foreground empty:hidden"
-      >
-        {presentation.statusMessage}
-      </div>
+      {presentation.statusMessage && (
+        <div
+          role="status"
+          aria-live="polite"
+          aria-atomic="true"
+          className="mt-3 text-sm text-muted-foreground empty:hidden"
+        >
+          {presentation.statusMessage}
+        </div>
+      )}
 
       {presentation.errorMessage !== "" && (
         <div className="mt-3 text-[0.9375rem] text-destructive" role="alert">
@@ -90,5 +85,18 @@ export function TranslationOutput() {
         </div>
       )}
     </section>
+  );
+}
+
+function BouncingDots() {
+  return (
+    <span
+      aria-hidden="true"
+      className="ml-1 inline-flex items-center gap-1 align-middle"
+    >
+      <span className="size-1 animate-dot-bounce rounded-full bg-current [animation-delay:0ms]" />
+      <span className="size-1 animate-dot-bounce rounded-full bg-current [animation-delay:150ms]" />
+      <span className="size-1 animate-dot-bounce rounded-full bg-current [animation-delay:300ms]" />
+    </span>
   );
 }

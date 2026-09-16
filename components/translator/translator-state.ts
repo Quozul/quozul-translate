@@ -23,12 +23,7 @@ export interface TranslatorInputs {
   preset: ModelPreset;
 }
 
-/**
- * Provenance of a finished translation, used for the status line under the
- * translated text ("Translated by MiLMMT (Balanced) in 812ms (cached)").
- */
 export interface TranslationAttribution {
-  /** Full model name: "<model family> <quality preset>", e.g. "MiLMMT (Balanced)". */
   model: string;
   durationMs: number;
   cached: boolean;
@@ -45,7 +40,6 @@ export type PauseReason = "composition";
 export type RequestState =
   | { status: "idle" }
   | { status: "paused"; reason: PauseReason }
-  /** `immediate` skips the typing debounce (e.g. an explicit language swap). */
   | { status: "waiting"; immediate?: boolean }
   | { status: "loading"; requestId: number }
   | { status: "ready" }
@@ -99,10 +93,6 @@ export function sameInputs(a: TranslatorInputs, b: TranslatorInputs): boolean {
   );
 }
 
-/**
- * Whether the two language pickers can trade places. Auto-detect has no
- * language to move into the target slot, so a detect source cannot swap.
- */
 export function canSwapLanguages(inputs: TranslatorInputs): boolean {
   return (
     inputs.source !== DETECT_SOURCE &&
@@ -291,7 +281,7 @@ export function translatorReducer(
 }
 
 export interface TranslationPresentation {
-  showSkeleton: boolean;
+  busy: boolean;
   statusMessage: string;
   errorMessage: string;
   canRetry: boolean;
@@ -300,10 +290,6 @@ export interface TranslationPresentation {
 
 const READY_FALLBACK_MESSAGE = "Translation ready";
 
-/**
- * Status line for a finished translation. Falls back to a plain acknowledgement
- * when the response carried no model provenance.
- */
 export function readyMessage(
   attribution: TranslationAttribution | null,
 ): string {
@@ -321,9 +307,7 @@ export function getTranslationPresentation(
   const stale = lastSuccess !== null && request.status !== "ready";
 
   let statusMessage = "";
-  if (busy) {
-    statusMessage = "Translating…";
-  } else if (request.status === "ready") {
+  if (request.status === "ready") {
     statusMessage = readyMessage(lastSuccess?.attribution ?? null);
   } else if (
     translated !== "" &&
@@ -333,7 +317,7 @@ export function getTranslationPresentation(
   }
 
   return {
-    showSkeleton: busy && translated === "",
+    busy,
     statusMessage,
     errorMessage: request.status === "failed" ? request.error : "",
     canRetry: request.status === "failed" && request.retryable,
