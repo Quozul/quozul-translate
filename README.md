@@ -10,7 +10,7 @@ OpenAI-compatible completion server (MiLMMT / Hy-MT2 builds) behind
 - pnpm (`corepack enable`; see `packageManager` in `package.json`)
 - Node.js ≥ 20
 - A running OpenAI-compatible model server exposing `chat.completions`
-  with the local model IDs listed in `lib/models.ts`
+  with the local model IDs listed in `lib/server/model-ids.ts`
 
 ## Environment variables
 
@@ -44,6 +44,11 @@ pnpm build        # production build
   `MODEL_FAMILIES` order. The response includes the family that actually
   ran (`family` field, preserved on cache hits) plus the `preset`,
   `cached`, and server-measured `durationMs` used by the status line.
+- **Model privacy**: the concrete provider model IDs (e.g.
+  `local/milmmt-46-4b`) live only in the `server-only` module
+  `lib/server/model-ids.ts`. The client-side registry `lib/models.ts`
+  carries just the family identity and preset, so the browser can show
+  `MiLMMT (Balanced)` without ever learning the underlying model name.
 - **Preferences** (target, source, family, preset, per-language usage)
   persist in `localStorage` under `qzl.preferences.v1`. Reads are fully
   validated: malformed records fall back field-by-field, legacy `model`
@@ -84,7 +89,7 @@ app/                     Server Components + the one API route
 components/translator/   client feature: reducer state, hooks, panes
 lib/                     shared contract, validated preferences, registries
 lib/server/              request resolution, prompts, provider adapter,
-                         translation service, cache (all `server-only`
-                         except the pure policy modules)
+                          translation service, cache, provider model IDs
+                          (all `server-only` except the pure policy modules)
 tests/                   vitest support (stubs)
 ```

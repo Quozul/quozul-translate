@@ -16,12 +16,8 @@ const LIMIT_LABEL = MAX_TEXT_LENGTH.toLocaleString("en-US");
 
 export function SourceEditor() {
   const { text } = useTranslatorEditor();
-  const {
-    changeText,
-    startComposition,
-    endComposition,
-    clearText,
-  } = useTranslatorActions();
+  const { changeText, startComposition, endComposition, clearText } =
+    useTranslatorActions();
   const { paste } = usePasteFeedback(changeText);
   const input = useRef<HTMLTextAreaElement>(null);
 

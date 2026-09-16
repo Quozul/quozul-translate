@@ -12,6 +12,7 @@ import {
 } from "../translation-text";
 import type { TranslationRequestBody } from "../translation-contract";
 import { ApiError } from "./errors";
+import { modelIdFor } from "./model-ids";
 import type { CacheKey } from "./translation-cache";
 
 export interface SanitizedRequest {
@@ -84,7 +85,7 @@ export function resolveRequest(body: TranslationRequestBody): SanitizedRequest {
     target,
     family,
     preset: body.preset,
-    model: family.models[body.preset],
+    model: modelIdFor(family.id, body.preset),
   };
 }
 

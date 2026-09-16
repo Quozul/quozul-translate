@@ -5,11 +5,16 @@ export type ModelPreset = (typeof MODEL_PRESETS)[number];
 
 export type SourcePolicy = "required" | "automatic";
 
+/**
+ * Client-safe model family metadata. Deliberately excludes the concrete
+ * provider model IDs (e.g. "local/milmmt-46-4b"): those live in
+ * `lib/server/model-ids.ts` and must never reach the browser. The client only
+ * ever needs the family identity and the quality preset.
+ */
 interface ModelFamilyDefinition {
   readonly id: string;
   readonly name: string;
   readonly sourcePolicy: SourcePolicy;
-  readonly models: Readonly<Record<ModelPreset, string>>;
   readonly languages: readonly string[];
 }
 
@@ -18,11 +23,6 @@ const FAMILIES = [
     id: "milmmt",
     name: "MiLMMT",
     sourcePolicy: "required",
-    models: {
-      turbo: "local/milmmt-46-1b",
-      balanced: "local/milmmt-46-4b",
-      quality: "local/milmmt-46-12b",
-    },
     languages: [
       "ar",
       "az",
@@ -76,11 +76,6 @@ const FAMILIES = [
     id: "hy-mt2",
     name: "Hy-MT2",
     sourcePolicy: "automatic",
-    models: {
-      turbo: "local/hy-mt2-1.8b",
-      balanced: "local/hy-mt2-7b",
-      quality: "local/hy-mt2-30b-a3b",
-    },
     languages: [
       "ar",
       "bn",
@@ -126,11 +121,6 @@ const FAMILIES = [
     id: "translategemma",
     name: "TranslateGemma",
     sourcePolicy: "required",
-    models: {
-      turbo: "local/translategemma-4b-it",
-      balanced: "local/translategemma-12b-it",
-      quality: "local/translategemma-27b-it",
-    },
     languages: [
       "ar",
       "az",

@@ -45,13 +45,8 @@ describe("TranslateGemma family", () => {
     return found;
   }
 
-  it("serves the three TranslateGemma checkpoints", () => {
+  it("requires an explicit source", () => {
     expect(translategemma().sourcePolicy).toBe("required");
-    expect(translategemma().models.turbo).toBe("local/translategemma-4b-it");
-    expect(translategemma().models.balanced).toBe(
-      "local/translategemma-12b-it",
-    );
-    expect(translategemma().models.quality).toBe("local/translategemma-27b-it");
   });
 
   it("names an explicit source and covers the catalog except Cantonese", () => {
