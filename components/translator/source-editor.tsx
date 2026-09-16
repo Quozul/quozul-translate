@@ -84,7 +84,7 @@ export function SourceEditor() {
         aria-label="Text to translate"
         aria-invalid={tooLong || undefined}
         aria-describedby={showCount ? "source-limit" : undefined}
-        className="min-h-40 flex-1 resize-none rounded-lg border-0 bg-transparent px-2 text-2xl leading-normal md:text-2xl focus-visible:ring-3 focus-visible:ring-inset"
+        className="min-h-40 flex-1 resize-none overflow-y-auto rounded-lg border-0 bg-transparent px-2 text-2xl md:text-2xl field-sizing-fixed focus-visible:ring-3 focus-visible:ring-inset"
         value={text}
         onChange={handleTextChange}
         onCompositionStart={startComposition}
@@ -99,7 +99,7 @@ export function SourceEditor() {
               : "self-end text-xs text-muted-foreground"
           }
         >
-          {charCount} / {LIMIT_LABEL}
+          {charCount.toLocaleString("en-US")} / {LIMIT_LABEL}
         </span>
       )}
     </section>

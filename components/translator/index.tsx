@@ -31,7 +31,9 @@ function TranslatorPanes() {
       )}
     >
       <SourceEditor />
-      <div className={cn(hasTranslation && "hidden md:block")}>
+      <div
+        className={cn("overflow-hidden", hasTranslation && "hidden md:block")}
+      >
         <TranslationOutput />
       </div>
     </div>
