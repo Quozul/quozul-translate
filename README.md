@@ -17,7 +17,7 @@ OpenAI-compatible completion server (MiLMMT / Hy-MT2 builds) behind
 | Variable               | Purpose                                     | Default                    |
 | ---------------------- | ------------------------------------------- | -------------------------- |
 | `OPENAI_API_KEY`       | Required; requests fail with 503 when unset | —                          |
-| `TRANSLATION_BASE_URL` | OpenAI-compatible base URL                  | `http://127.0.0.1:9931/v1` |
+| `OPENAI_BASE_URL`      | OpenAI-compatible base URL                  | `http://127.0.0.1:9931/v1` |
 
 ## Commands
 

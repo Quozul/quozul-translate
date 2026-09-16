@@ -25,7 +25,7 @@ export function createCompletionFromEnvironment(): ModelCompletion {
     );
   }
   const client = new OpenAI({
-    baseURL: process.env.TRANSLATION_BASE_URL ?? DEFAULT_BASE_URL,
+    baseURL: process.env.OPENAI_BASE_URL ?? DEFAULT_BASE_URL,
     apiKey,
     timeout: REQUEST_TIMEOUT_MS,
     maxRetries: 0,
