@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import {
   Combobox,
   ComboboxContent,
@@ -51,11 +51,14 @@ export function LanguagePicker({
   const [query, setQuery] = useState<string | null>(null);
   const detectValue = detect?.value;
   const detectLabel = detect?.label ?? "";
-  const selectedLabel =
-    detectValue !== undefined && selected === detectValue
-      ? detectLabel
-      : selected;
-  const inputValue = query ?? selectedLabel;
+  // Base UI derives the text it writes into the input from the raw item value, and it
+  // writes that text again once the popup finishes closing. Without a label map, the
+  // detection option lands in the input as "detect" instead of "Detect language".
+  const itemToStringLabel = useCallback(
+    (value: string) => (value === detectValue ? detectLabel : value),
+    [detectValue, detectLabel],
+  );
+  const inputValue = query ?? itemToStringLabel(selected);
 
   const groups = useMemo(
     () => getLanguageGroups({ query: query ?? "", frequent, detection: detect }),
@@ -74,6 +77,7 @@ export function LanguagePicker({
     <Combobox
       disabled={disabled}
       items={items}
+      itemToStringLabel={itemToStringLabel}
       filter={() => true}
       // Base UI only selects on Enter when an item is highlighted, and
       // it does not highlight while typing by default. Without this, filtering to
