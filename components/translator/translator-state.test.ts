@@ -14,7 +14,7 @@ import { DETECT_SOURCE } from "@/lib/models";
 const BASE_INPUTS: TranslatorInputs = {
   text: "",
   source: "detect",
-  target: "French",
+  target: "fr",
   family: "milmmt",
   preset: "balanced",
 };
@@ -169,26 +169,26 @@ describe("translator reducer — cross-field rules", () => {
   it("keeps the explicit source when switching to an auto-detect family", () => {
     let state = translatorReducer(createInitialState(), {
       type: "sourceChanged",
-      source: "English",
+      source: "en",
     });
-    expect(state.inputs.source).toBe("English");
+    expect(state.inputs.source).toBe("en");
     state = translatorReducer(state, {
       type: "familyChanged",
       family: "hy-mt2",
     });
-    expect(state.inputs.source).toBe("English");
+    expect(state.inputs.source).toBe("en");
   });
 
   it("keeps an explicit source for required-source families", () => {
     let state = translatorReducer(createInitialState(), {
       type: "sourceChanged",
-      source: "English",
+      source: "en",
     });
     state = translatorReducer(state, {
       type: "familyChanged",
       family: "milmmt",
     });
-    expect(state.inputs.source).toBe("English");
+    expect(state.inputs.source).toBe("en");
   });
 
   it("keeps the chosen family when a source choice requires a fallback family", () => {
@@ -198,10 +198,10 @@ describe("translator reducer — cross-field rules", () => {
     });
     state = translatorReducer(state, {
       type: "sourceChanged",
-      source: "English",
+      source: "en",
     });
     expect(state.inputs.family).toBe("hy-mt2");
-    expect(state.inputs.source).toBe("English");
+    expect(state.inputs.source).toBe("en");
   });
 
   it("keeps the chosen family when detection requires a fallback family", () => {
@@ -243,9 +243,9 @@ describe("translator reducer — swapping languages", () => {
   }
 
   it("trades languages and moves the translation into the editor", () => {
-    const state = swap(translatedTo("English", "French", "hello", "bonjour"));
-    expect(state.inputs.source).toBe("French");
-    expect(state.inputs.target).toBe("English");
+    const state = swap(translatedTo("en", "fr", "hello", "bonjour"));
+    expect(state.inputs.source).toBe("fr");
+    expect(state.inputs.target).toBe("en");
     expect(state.inputs.text).toBe("bonjour");
     // The reverse direction has to be translated, so a request is scheduled
     // immediately: a swap is deliberate and must not wait out the debounce.
@@ -254,18 +254,18 @@ describe("translator reducer — swapping languages", () => {
 
   it("is offered only for an explicit source language", () => {
     expect(
-      canSwapLanguages({ ...BASE_INPUTS, source: "English", target: "French" }),
+      canSwapLanguages({ ...BASE_INPUTS, source: "en", target: "fr" }),
     ).toBe(true);
     expect(canSwapLanguages({ ...BASE_INPUTS, source: DETECT_SOURCE })).toBe(
       false,
     );
     expect(
-      canSwapLanguages({ ...BASE_INPUTS, source: "Klingon", target: "French" }),
+      canSwapLanguages({ ...BASE_INPUTS, source: "klingon", target: "fr" }),
     ).toBe(false);
   });
 
   it("refuses to swap auto-detect away", () => {
-    const before = translatedTo(DETECT_SOURCE, "French", "hello", "bonjour");
+    const before = translatedTo(DETECT_SOURCE, "fr", "hello", "bonjour");
     expect(swap(before)).toBe(before);
     expect(before.inputs.source).toBe(DETECT_SOURCE);
   });
@@ -273,23 +273,20 @@ describe("translator reducer — swapping languages", () => {
   it("keeps the draft when no finished translation exists yet", () => {
     let state = translatorReducer(createInitialState(), {
       type: "sourceChanged",
-      source: "English",
+      source: "en",
     });
     state = translatorReducer(state, {
       type: "targetChanged",
-      target: "French",
+      target: "fr",
     });
     const swappedState = swap(type(state, "hello"));
-    expect(swappedState.inputs.source).toBe("French");
-    expect(swappedState.inputs.target).toBe("English");
+    expect(swappedState.inputs.source).toBe("fr");
+    expect(swappedState.inputs.target).toBe("en");
     expect(swappedState.inputs.text).toBe("hello");
   });
 
   it("keeps a draft whose translation is no longer current", () => {
-    const stale = type(
-      translatedTo("English", "French", "hello", "bonjour"),
-      "hi",
-    );
+    const stale = type(translatedTo("en", "fr", "hello", "bonjour"), "hi");
     expect(swap(stale).inputs.text).toBe("hi");
   });
 });
@@ -326,7 +323,7 @@ describe("preferencesRestored", () => {
     expect(createInitialState().hydrated).toBe(false);
     const restored = translatorReducer(createInitialState(), {
       type: "preferencesRestored",
-      target: "French",
+      target: "fr",
       source: "detect",
       family: "milmmt",
       preset: "balanced",
@@ -335,7 +332,7 @@ describe("preferencesRestored", () => {
     expect(restored.hydrated).toBe(true);
     const afterUsage = translatorReducer(restored, {
       type: "usageUpdated",
-      frequent: ["French"],
+      frequent: ["fr"],
     });
     expect(afterUsage.hydrated).toBe(true);
   });
@@ -343,15 +340,15 @@ describe("preferencesRestored", () => {
   it("hydrates inputs, applying nothing new (parser already validated)", () => {
     const state = translatorReducer(createInitialState(), {
       type: "preferencesRestored",
-      target: "Japanese",
+      target: "ja",
       source: "detect",
       family: "hy-mt2",
       preset: "turbo",
-      frequent: ["German"],
+      frequent: ["de"],
     });
-    expect(state.inputs.target).toBe("Japanese");
+    expect(state.inputs.target).toBe("ja");
     expect(state.inputs.preset).toBe("turbo");
-    expect(state.frequent).toEqual(["German"]);
+    expect(state.frequent).toEqual(["de"]);
   });
 });
 

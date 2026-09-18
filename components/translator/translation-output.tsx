@@ -1,7 +1,7 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
-import { languageByName } from "@/lib/languages";
+import { languageByCode } from "@/lib/languages";
 import { CopyIcon } from "lucide-react";
 import {
   useTranslatorActions,
@@ -16,7 +16,8 @@ export function TranslationOutput() {
 
   const translated = lastSuccess?.translation ?? "";
   const resultTarget = lastSuccess?.inputs.target ?? "";
-  const resultLanguage = languageByName(resultTarget);
+  const resultLanguage = languageByCode(resultTarget);
+  const resultLabel = resultLanguage?.name ?? resultTarget;
   const showPlaceholder = translated === "";
 
   return (
@@ -30,7 +31,7 @@ export function TranslationOutput() {
           <p
             dir="auto"
             lang={resultLanguage?.code}
-            aria-label={`${resultTarget} translation`}
+            aria-label={`${resultLabel} translation`}
             className="text-2xl leading-normal wrap-break-word whitespace-pre-wrap"
           >
             {translated}

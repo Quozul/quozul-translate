@@ -10,7 +10,7 @@ function request(
   return {
     text: "hello world",
     source: "detect",
-    target: "French",
+    target: "fr",
     family: "milmmt",
     preset: "balanced",
     ...overrides,
@@ -25,16 +25,14 @@ describe("resolveRequest", () => {
   });
 
   it("keeps the requested family when it supports the pair", () => {
-    const resolved = resolveRequest(
-      request({ source: "English", target: "French" }),
-    );
+    const resolved = resolveRequest(request({ source: "en", target: "fr" }));
     expect(resolved.family.id).toBe("milmmt");
     expect(resolved.source?.name).toBe("English");
   });
 
   it("falls back from an auto-detect family to a required-source family when a source is chosen", () => {
     const resolved = resolveRequest(
-      request({ family: "hy-mt2", source: "English", target: "French" }),
+      request({ family: "hy-mt2", source: "en", target: "fr" }),
     );
     expect(resolved.family.id).toBe("milmmt");
     expect(resolved.source?.name).toBe("English");
@@ -50,7 +48,7 @@ describe("resolveRequest", () => {
     // Ukrainian is not in MiLMMT, so TranslateGemma is the only family that
     // can name an explicit Ukrainian source.
     const resolved = resolveRequest(
-      request({ family: "hy-mt2", source: "Ukrainian", target: "French" }),
+      request({ family: "hy-mt2", source: "uk", target: "fr" }),
     );
     expect(resolved.family.id).toBe("translategemma");
     expect(resolved.model).toBe("local/translategemma-12b-it");
@@ -81,18 +79,18 @@ describe("resolveRequest", () => {
   });
 
   it("rejects unknown target, source, and family", () => {
-    expect(() => resolveRequest(request({ target: "Klingon" }))).toThrow(
+    expect(() => resolveRequest(request({ target: "klingon" }))).toThrow(
       ApiError,
     );
     expect(() =>
-      resolveRequest(request({ source: "Klingon", target: "French" })),
+      resolveRequest(request({ source: "klingon", target: "fr" })),
     ).toThrow(ApiError);
   });
 
   it("reports an unsupported pair when no family can serve", () => {
     let caught: unknown;
     try {
-      resolveRequest(request({ source: "detect", target: "Bulgarian" }));
+      resolveRequest(request({ source: "detect", target: "bg" }));
     } catch (error) {
       caught = error;
     }
@@ -102,7 +100,7 @@ describe("resolveRequest", () => {
 
   it("builds a cache key that includes source, target, and model", () => {
     const key = cacheKeyFor(
-      resolveRequest(request({ source: "English", target: "French" })),
+      resolveRequest(request({ source: "en", target: "fr" })),
     );
     expect(key).toEqual({
       text: "hello world",
@@ -115,9 +113,7 @@ describe("resolveRequest", () => {
 
 describe("buildPrompt", () => {
   it("names the source language for required-source families", () => {
-    const sanitized = resolveRequest(
-      request({ source: "English", target: "French" }),
-    );
+    const sanitized = resolveRequest(request({ source: "en", target: "fr" }));
     const prompt = buildPrompt(sanitized);
     expect(prompt).toContain("Translate this from English to French:");
     expect(prompt).toContain("English: hello world");
@@ -134,8 +130,8 @@ describe("buildPrompt", () => {
     const sanitized = resolveRequest(
       request({
         family: "translategemma",
-        source: "English",
-        target: "Khmer",
+        source: "en",
+        target: "km",
       }),
     );
     expect(sanitized.family.id).toBe("translategemma");
@@ -149,7 +145,7 @@ describe("buildPrompt", () => {
 
   it("applies per-family prompt name overrides", () => {
     const sanitized = resolveRequest(
-      request({ source: "English", target: "Filipino", family: "milmmt" }),
+      request({ source: "en", target: "tl", family: "milmmt" }),
     );
     expect(buildPrompt(sanitized)).toContain("to Tagalog:");
   });

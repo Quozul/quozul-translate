@@ -1,4 +1,4 @@
-import { languageByName } from "@/lib/languages";
+import { languageByCode } from "@/lib/languages";
 import {
   DEFAULT_FAMILY,
   DEFAULT_PRESET,
@@ -96,8 +96,8 @@ export function sameInputs(a: TranslatorInputs, b: TranslatorInputs): boolean {
 export function canSwapLanguages(inputs: TranslatorInputs): boolean {
   return (
     inputs.source !== DETECT_SOURCE &&
-    languageByName(inputs.source) !== undefined &&
-    languageByName(inputs.target) !== undefined
+    languageByCode(inputs.source) !== undefined &&
+    languageByCode(inputs.target) !== undefined
   );
 }
 

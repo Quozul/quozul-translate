@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useReducer, useRef } from "react";
-import { languageByName } from "@/lib/languages";
+import { languageByCode } from "@/lib/languages";
 import {
   DETECT_SOURCE,
   modelDisplayName,
@@ -54,7 +54,7 @@ export interface TranslatorSessionSlice {
 }
 
 export interface TranslatorActions {
-  chooseLanguage: (name: string) => void;
+  chooseLanguage: (code: string) => void;
   changeSource: (value: string) => void;
   changeFamily: (value: ModelFamilyId) => void;
   changePreset: (value: ModelPreset) => void;
@@ -212,16 +212,16 @@ export function useTranslatorController(): {
   }, [request, inputs, startNow]);
 
   const chooseLanguage = useCallback(
-    (name: string) => {
-      if (!languageByName(name)) return;
-      applyInput({ type: "targetChanged", target: name });
+    (code: string) => {
+      if (!languageByCode(code)) return;
+      applyInput({ type: "targetChanged", target: code });
     },
     [applyInput],
   );
 
   const changeSource = useCallback(
     (value: string) => {
-      if (value !== DETECT_SOURCE && !languageByName(value)) return;
+      if (value !== DETECT_SOURCE && !languageByCode(value)) return;
       applyInput({ type: "sourceChanged", source: value });
     },
     [applyInput],

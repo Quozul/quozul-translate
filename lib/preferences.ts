@@ -8,7 +8,7 @@ import {
   type ModelPreset,
 } from "./models";
 import { DEFAULT_TARGET } from "./translation-contract";
-import { languageByName, LANGUAGES } from "./languages";
+import { languageByCode, LANGUAGES } from "./languages";
 
 const PREFERENCES_KEY = "qzl.preferences.v1";
 
@@ -61,11 +61,12 @@ function parseUsage(value: unknown): Record<string, number> {
   if (typeof value !== "object" || value === null || Array.isArray(value)) {
     return usage;
   }
-  for (const [name, count] of Object.entries(value)) {
-    if (!languageByName(name)) continue;
+  for (const [key, count] of Object.entries(value)) {
+    const language = languageByCode(key);
+    if (!language) continue;
     if (typeof count !== "number") continue;
     if (!Number.isSafeInteger(count) || count < 0) continue;
-    usage[name] = count;
+    usage[language.code] = count;
   }
   return usage;
 }
@@ -99,16 +100,22 @@ export function parseTranslationPreferences(value: unknown): Preferences {
     }
   }
 
-  const target =
-    typeof stored.target === "string" && languageByName(stored.target)
-      ? stored.target
-      : fallback.target;
+  const resolvedTarget =
+    typeof stored.target === "string"
+      ? languageByCode(stored.target)
+      : undefined;
+  const target = resolvedTarget ? resolvedTarget.code : fallback.target;
 
+  const resolvedSource =
+    typeof stored.source === "string" && stored.source !== DETECT_SOURCE
+      ? languageByCode(stored.source)
+      : undefined;
   const source =
-    typeof stored.source === "string" &&
-    (stored.source === DETECT_SOURCE || languageByName(stored.source))
-      ? stored.source
-      : fallback.source;
+    stored.source === DETECT_SOURCE
+      ? DETECT_SOURCE
+      : resolvedSource
+        ? resolvedSource.code
+        : fallback.source;
 
   family = family ?? fallback.family;
   preset = preset ?? fallback.preset;
@@ -156,13 +163,11 @@ export function getFrequentLanguages(
   usage: Readonly<Record<string, number>>,
   limit: number,
 ): string[] {
-  const languages = LANGUAGES.map((language) => language.name).filter(
-    (name) => (usage[name] ?? 0) > 0,
+  const codes = LANGUAGES.map((language) => language.code).filter(
+    (code) => (usage[code] ?? 0) > 0,
   );
-  languages.sort(
-    (a, b) => (usage[b] ?? 0) - (usage[a] ?? 0) || a.localeCompare(b),
-  );
-  return languages.slice(0, limit);
+  codes.sort((a, b) => (usage[b] ?? 0) - (usage[a] ?? 0) || a.localeCompare(b));
+  return codes.slice(0, limit);
 }
 
 export function browserStorage(): (StorageReader & StorageWriter) | null {

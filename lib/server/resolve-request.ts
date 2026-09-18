@@ -1,4 +1,4 @@
-import { languageByName, type Language } from "../languages";
+import { languageByCode, type Language } from "../languages";
 import {
   DETECT_SOURCE,
   familyById,
@@ -38,7 +38,7 @@ export function resolveRequest(body: TranslationRequestBody): SanitizedRequest {
     throw new ApiError("INVALID_INPUT", 400, issue.message);
   }
 
-  const target = languageByName(body.target.trim());
+  const target = languageByCode(body.target);
   if (!target) {
     throw new ApiError(
       "INVALID_INPUT",
@@ -50,7 +50,7 @@ export function resolveRequest(body: TranslationRequestBody): SanitizedRequest {
   const rawSource = body.source.trim();
   let source: Language | null = null;
   if (rawSource !== "" && rawSource !== DETECT_SOURCE) {
-    const resolved = languageByName(rawSource);
+    const resolved = languageByCode(rawSource);
     if (!resolved) {
       throw new ApiError(
         "INVALID_INPUT",

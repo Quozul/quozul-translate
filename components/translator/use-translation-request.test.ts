@@ -10,7 +10,7 @@ import {
 } from "@/lib/translation-client";
 import type { TranslationRequestBody } from "@/lib/translation-contract";
 
-function bodyFor(text: string, target = "French"): TranslationRequestBody {
+function bodyFor(text: string, target = "fr"): TranslationRequestBody {
   return {
     text,
     source: "detect",
@@ -103,13 +103,13 @@ describe("translation engine request ownership", () => {
   it("ignores an older response whose body resolves after newer input (the stale-JSON race)", async () => {
     const { engine, sent, results } = makeHarness();
 
-    engine.start(1, bodyFor("old", "French"));
-    engine.start(2, bodyFor("new", "German"));
+    engine.start(1, bodyFor("old", "fr"));
+    engine.start(2, bodyFor("new", "de"));
     expect(sent).toHaveLength(2);
 
     sent[1].completion.resolve("NEU");
     await flush();
-    expect(results).toEqual([{ id: 2, target: "German", translation: "NEU" }]);
+    expect(results).toEqual([{ id: 2, target: "de", translation: "NEU" }]);
 
     sent[0].completion.resolve("OLD");
     await flush();
@@ -223,6 +223,6 @@ describe("translation engine request ownership", () => {
     sent[0].completion.reject(new TranslationFailure("old failed"));
     sent[1].completion.resolve("B!");
     await flush();
-    expect(results).toEqual([{ id: 2, target: "French", translation: "B!" }]);
+    expect(results).toEqual([{ id: 2, target: "fr", translation: "B!" }]);
   });
 });

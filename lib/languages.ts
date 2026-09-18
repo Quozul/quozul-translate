@@ -83,16 +83,17 @@ export const LANGUAGES: Language[] = [
   { name: "Vietnamese", native: "Tiếng Việt", code: "vi" },
 ];
 
-const LANGUAGE_BY_NAME = new Map(
-  LANGUAGES.map((language) => [language.name, language]),
-);
-
 const LANGUAGE_BY_CODE = new Map(
   LANGUAGES.map((language) => [language.code.toLowerCase(), language]),
 );
 
-export function languageByName(name: string): Language | undefined {
-  return LANGUAGE_BY_NAME.get(name);
+/**
+ * Resolves a language from its code (e.g. "fr", "zh-Hant"). Codes are the
+ * canonical identity shared by the client, the API request body, and the model
+ * family tables; display names are derived from the returned record.
+ */
+export function languageByCode(code: string): Language | undefined {
+  return LANGUAGE_BY_CODE.get(code.trim().toLowerCase());
 }
 
 export function normalizeLanguageQuery(query: string): string {
@@ -138,8 +139,8 @@ export function getLanguageGroups(options: {
   detection?: DetectionOption;
 }): LanguageGroups {
   const normalized = normalizeLanguageQuery(options.query);
-  const topNames = options.frequent.slice(0, FREQUENT_LANGUAGE_LIMIT);
-  const topSet = new Set(topNames);
+  const topCodes = options.frequent.slice(0, FREQUENT_LANGUAGE_LIMIT);
+  const topSet = new Set(topCodes);
 
   const matches = LANGUAGES.filter((language) =>
     matchesNormalizedLanguage(language, normalized),
@@ -151,13 +152,13 @@ export function getLanguageGroups(options: {
       options.detection.label.toLowerCase().includes(normalized)
         ? options.detection
         : null,
-    frequent: topNames
-      .map((name) => LANGUAGE_BY_NAME.get(name))
+    frequent: topCodes
+      .map((code) => languageByCode(code))
       .filter(
         (language): language is Language =>
           language !== undefined &&
           matchesNormalizedLanguage(language, normalized),
       ),
-    others: matches.filter((language) => !topSet.has(language.name)),
+    others: matches.filter((language) => !topSet.has(language.code)),
   };
 }

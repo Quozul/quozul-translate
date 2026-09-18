@@ -39,7 +39,7 @@ describe("getLanguageGroups", () => {
   it("splits frequent from the rest and deduplicates", () => {
     const groups = getLanguageGroups({
       query: "",
-      frequent: ["French", "German"],
+      frequent: ["fr", "de"],
     });
     expect(groups.frequent.map((l) => l.name)).toEqual(["French", "German"]);
     expect(groups.others.map((l) => l.name)).not.toContain("French");
@@ -49,7 +49,7 @@ describe("getLanguageGroups", () => {
   it("caps frequent entries at three", () => {
     const groups = getLanguageGroups({
       query: "",
-      frequent: ["French", "German", "Spanish", "Japanese"],
+      frequent: ["fr", "de", "es", "ja"],
     });
     expect(groups.frequent).toHaveLength(3);
   });
@@ -57,7 +57,7 @@ describe("getLanguageGroups", () => {
   it("keeps frequent ordering by usage, not catalog order", () => {
     const groups = getLanguageGroups({
       query: "",
-      frequent: ["German", "French"],
+      frequent: ["de", "fr"],
     });
     expect(groups.frequent.map((l) => l.name)).toEqual(["German", "French"]);
   });
@@ -65,7 +65,7 @@ describe("getLanguageGroups", () => {
   it("filters frequent and other groups by the query", () => {
     const groups = getLanguageGroups({
       query: "japan",
-      frequent: ["German", "Japanese"],
+      frequent: ["de", "ja"],
     });
     expect(groups.frequent.map((l) => l.name)).toEqual(["Japanese"]);
     expect(groups.others.map((l) => l.name)).not.toContain("Japanese");
@@ -100,7 +100,7 @@ describe("getLanguageGroups", () => {
   });
 
   it("returns nothing matching for a nonsense query", () => {
-    const groups = getLanguageGroups({ query: "zzzzz", frequent: ["French"] });
+    const groups = getLanguageGroups({ query: "zzzzz", frequent: ["fr"] });
     expect(groups.frequent).toHaveLength(0);
     expect(groups.others).toHaveLength(0);
   });

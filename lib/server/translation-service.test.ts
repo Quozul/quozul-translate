@@ -10,8 +10,8 @@ function request(
 ): TranslationRequestBody {
   return {
     text: "hello",
-    source: "English",
-    target: "French",
+    source: "en",
+    target: "fr",
     family: "milmmt",
     preset: "balanced",
     ...overrides,

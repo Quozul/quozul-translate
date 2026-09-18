@@ -26,13 +26,13 @@ describe("parseTranslationPreferences", () => {
 
   it("preserves valid fields and defaults malformed ones individually", () => {
     const parsed = parseTranslationPreferences({
-      target: "Japanese",
+      target: "ja",
       source: "not-a-language",
       family: "hy-mt2",
       preset: "nonsense",
       translation_usage: {},
     });
-    expect(parsed.target).toBe("Japanese");
+    expect(parsed.target).toBe("ja");
     expect(parsed.source).toBe("detect");
     expect(parsed.family).toBe("hy-mt2");
     expect(parsed.preset).toBe("turbo");
@@ -61,32 +61,32 @@ describe("parseTranslationPreferences", () => {
   it("keeps an explicit source for auto-detecting families (request-time fallback)", () => {
     const parsed = parseTranslationPreferences({
       family: "hy-mt2",
-      source: "English",
+      source: "en",
     });
-    expect(parsed.source).toBe("English");
+    expect(parsed.source).toBe("en");
   });
 
   it("keeps an explicit source for required-source families", () => {
     const parsed = parseTranslationPreferences({
       family: "milmmt",
-      source: "English",
+      source: "en",
     });
-    expect(parsed.source).toBe("English");
+    expect(parsed.source).toBe("en");
   });
 
   describe("usage counters", () => {
     it("drops arrays, non-numbers, negatives, fractions, NaN, and unknown languages", () => {
       const parsed = parseTranslationPreferences({
         translation_usage: {
-          French: 3,
-          German: "9",
-          Spanish: -2,
-          Italian: 1.5,
-          Russian: Number.NaN,
-          Klingon: 12,
+          fr: 3,
+          de: "9",
+          es: -2,
+          it: 1.5,
+          ru: Number.NaN,
+          klingon: 12,
         },
       });
-      expect(parsed.usage).toEqual({ French: 3 });
+      expect(parsed.usage).toEqual({ fr: 3 });
     });
 
     it("rejects an array root for usage", () => {
@@ -98,7 +98,7 @@ describe("parseTranslationPreferences", () => {
 
 describe("loadTranslationPreferences", () => {
   it("returns defaults when storage is null (SSR or blocked storage)", () => {
-    expect(loadTranslationPreferences(null).target).toBe("English");
+    expect(loadTranslationPreferences(null).target).toBe("en");
   });
 
   it("returns defaults when the key is missing", () => {
@@ -114,17 +114,17 @@ describe("loadTranslationPreferences", () => {
   it("round-trips a saved record under the legacy wire name", () => {
     const { reader, writer, data } = memoryStorage();
     saveTranslationPreferences(writer, {
-      target: "German",
+      target: "de",
       source: "detect",
       family: "hy-mt2",
       preset: "turbo",
-      usage: { German: 4 },
+      usage: { de: 4 },
     });
     const wire = JSON.parse(data.get(PREFERENCES_KEY) ?? "{}");
-    expect(wire.translation_usage).toEqual({ German: 4 });
+    expect(wire.translation_usage).toEqual({ de: 4 });
     const loaded = loadTranslationPreferences(reader);
-    expect(loaded.target).toBe("German");
-    expect(loaded.usage.German).toBe(4);
+    expect(loaded.target).toBe("de");
+    expect(loaded.usage.de).toBe(4);
   });
 
   it("survives storage throwing on read or write", () => {
@@ -139,7 +139,7 @@ describe("loadTranslationPreferences", () => {
     expect(loadTranslationPreferences(hostile).family).toBe("milmmt");
     expect(() =>
       saveTranslationPreferences(hostile, {
-        target: "French",
+        target: "fr",
         source: "detect",
         family: "milmmt",
         preset: "balanced",
@@ -152,10 +152,10 @@ describe("loadTranslationPreferences", () => {
 describe("getFrequentLanguages", () => {
   it("orders by count, ties alphabetical, known languages only", () => {
     const frequent = getFrequentLanguages(
-      { German: 5, French: 9, Spanish: 9, Klingon: 100, Italian: 0 },
+      { de: 5, fr: 9, es: 9, klingon: 100, it: 0 },
       3,
     );
-    expect(frequent).toEqual(["French", "Spanish", "German"]);
+    expect(frequent).toEqual(["es", "fr", "de"]);
   });
 
   it("returns an empty list for empty usage", () => {

@@ -7,12 +7,18 @@ import {
   type ModelFamilyId,
   type ModelPreset,
 } from "./models";
-import { LANGUAGES } from "@/lib/languages";
+import { languageByCode } from "@/lib/languages";
 
 export const MAX_TEXT_LENGTH = 4_096;
 
+const FALLBACK_LANGUAGE_CODE = "en";
+
+/**
+ * The browser's UI language resolved to a supported code, falling back to
+ * English. Codes are the canonical language identity sent to the API.
+ */
 export const DEFAULT_TARGET =
-  LANGUAGES.find((lang) => lang.code === navigator.language)?.name ?? "English";
+  languageByCode(navigator.language)?.code ?? FALLBACK_LANGUAGE_CODE;
 
 function isFamilyId(value: string): value is ModelFamilyId {
   return MODEL_FAMILIES.some((family) => family.id === value);

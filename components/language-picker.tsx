@@ -13,6 +13,7 @@ import {
 } from "@/components/ui/combobox";
 import {
   getLanguageGroups,
+  languageByCode,
   type DetectionOption,
   type Language,
 } from "@/lib/languages";
@@ -52,10 +53,14 @@ export function LanguagePicker({
   const detectValue = detect?.value;
   const detectLabel = detect?.label ?? "";
   // Base UI derives the text it writes into the input from the raw item value, and it
-  // writes that text again once the popup finishes closing. Without a label map, the
-  // detection option lands in the input as "detect" instead of "Detect language".
+  // writes that text again once the popup finishes closing. Item values are language
+  // codes, so map them back to display names; the detection option lands in the
+  // input as "detect" without a label map for it too.
   const itemToStringLabel = useCallback(
-    (value: string) => (value === detectValue ? detectLabel : value),
+    (value: string) =>
+      value === detectValue
+        ? detectLabel
+        : (languageByCode(value)?.name ?? value),
     [detectValue, detectLabel],
   );
   const inputValue = query ?? itemToStringLabel(selected);
@@ -69,8 +74,8 @@ export function LanguagePicker({
   const items = useMemo(() => {
     const values: string[] = [];
     if (groups.detection !== null) values.push(groups.detection.value);
-    for (const language of groups.frequent) values.push(language.name);
-    for (const language of groups.others) values.push(language.name);
+    for (const language of groups.frequent) values.push(language.code);
+    for (const language of groups.others) values.push(language.code);
     return values;
   }, [groups]);
 
@@ -122,7 +127,7 @@ export function LanguagePicker({
             <ComboboxGroup>
               <ComboboxLabel>Frequently used</ComboboxLabel>
               {groups.frequent.map((language) => (
-                <ComboboxItem key={language.code} value={language.name}>
+                <ComboboxItem key={language.code} value={language.code}>
                   <LanguageOption language={language} />
                 </ComboboxItem>
               ))}
@@ -132,7 +137,7 @@ export function LanguagePicker({
             <ComboboxGroup>
               <ComboboxLabel>All languages</ComboboxLabel>
               {groups.others.map((language) => (
-                <ComboboxItem key={language.code} value={language.name}>
+                <ComboboxItem key={language.code} value={language.code}>
                   <LanguageOption language={language} />
                 </ComboboxItem>
               ))}

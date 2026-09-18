@@ -9,7 +9,7 @@ import type { TranslationRequestBody } from "./translation-contract";
 const body: TranslationRequestBody = {
   text: "hello",
   source: "detect",
-  target: "French",
+  target: "fr",
   family: "hy-mt2",
   preset: "balanced",
 };
