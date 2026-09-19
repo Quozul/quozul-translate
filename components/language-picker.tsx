@@ -12,10 +12,10 @@ import {
   ComboboxList,
 } from "@/components/ui/combobox";
 import {
-  getLanguageGroups,
-  languageByCode,
   type DetectionOption,
+  getLanguageGroups,
   type Language,
+  languageByCode,
 } from "@/lib/languages";
 
 interface LanguagePickerProps {

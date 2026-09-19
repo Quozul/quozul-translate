@@ -1,11 +1,11 @@
 import { describe, expect, it } from "vitest";
+import { MAX_TEXT_LENGTH } from "./translation-contract";
 import {
   countTranslationCharacters,
   displayedCharacterCount,
   normalizeTranslationText,
   validateTranslationInput,
 } from "./translation-text";
-import { MAX_TEXT_LENGTH } from "./translation-contract";
 
 describe("normalizeTranslationText", () => {
   it("converts CRLF and lone CR to LF", () => {

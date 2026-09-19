@@ -4,9 +4,9 @@ import { useCallback, useEffect, useMemo, useReducer, useRef } from "react";
 import { languageByCode } from "@/lib/languages";
 import {
   DETECT_SOURCE,
-  modelDisplayName,
   type ModelFamilyId,
   type ModelPreset,
+  modelDisplayName,
 } from "@/lib/models";
 import type { TranslationMeta } from "@/lib/translation-client";
 import {

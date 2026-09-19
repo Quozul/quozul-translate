@@ -1,5 +1,6 @@
 "use client";
 
+import { ArrowLeftRightIcon } from "lucide-react";
 import { useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Kbd, KbdGroup } from "@/components/ui/kbd";
@@ -12,7 +13,6 @@ import {
   useTranslatorActions,
   useTranslatorEditor,
 } from "./translator-context";
-import { ArrowLeftRightIcon } from "lucide-react";
 
 // Firefox restores a button's dynamic disabled state before React hydrates.
 // https://bugzilla.mozilla.org/show_bug.cgi?id=1847798

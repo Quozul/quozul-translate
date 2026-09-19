@@ -19,10 +19,7 @@ describe("matchesLanguage", () => {
       matchesLanguage({ name: "Japanese", native: "日本語", code: "ja" }, "ja"),
     ).toBe(true);
     expect(
-      matchesLanguage(
-        { name: "Gujarati", native: "ગુજરાતી", code: "gu" },
-        "ja",
-      ),
+      matchesLanguage({ name: "Gujarati", native: "ગુજરાતી", code: "gu" }, "ja"),
     ).toBe(false);
   });
 

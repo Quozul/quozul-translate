@@ -1,12 +1,12 @@
 "use client";
 
-import { createContext, useContext, type ReactNode } from "react";
+import { createContext, type ReactNode, useContext } from "react";
 import {
-  useTranslatorController,
   type TranslatorActions,
   type TranslatorEditorSlice,
   type TranslatorPreferencesSlice,
   type TranslatorSessionSlice,
+  useTranslatorController,
 } from "./use-translator";
 
 const TranslatorPreferencesContext =

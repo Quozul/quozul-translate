@@ -1,13 +1,6 @@
 "use client";
 
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import {
   Dialog,
   DialogContent,
   DialogDescription,
@@ -15,11 +8,18 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  familyById,
+  isModelPreset,
   MODEL_FAMILIES,
   MODEL_PRESET_LABELS,
   MODEL_PRESETS,
-  familyById,
-  isModelPreset,
   type ModelFamilyId,
   type ModelPreset,
 } from "@/lib/models";

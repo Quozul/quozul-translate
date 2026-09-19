@@ -1,6 +1,6 @@
-import type { ReactNode } from "react";
+import { cn } from "cn";
 import { Geist } from "next/font/google";
-import { cn } from "@/lib/utils";
+import type { ReactNode } from "react";
 import { Toaster } from "@/components/ui/toast";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import "./globals.css";

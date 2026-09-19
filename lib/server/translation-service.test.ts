@@ -1,9 +1,9 @@
 import { describe, expect, it, vi } from "vitest";
-import type { ModelCompletion } from "./openai-adapter";
-import { translateRequest } from "./translation-service";
-import { createTranslationCache } from "./translation-cache";
-import { ApiError } from "./errors";
 import type { TranslationRequestBody } from "../translation-contract";
+import { ApiError } from "./errors";
+import type { ModelCompletion } from "./openai-adapter";
+import { createTranslationCache } from "./translation-cache";
+import { translateRequest } from "./translation-service";
 
 function request(
   overrides: Partial<TranslationRequestBody> = {},

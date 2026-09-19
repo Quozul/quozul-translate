@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { createTranslationCache, type CacheKey } from "./translation-cache";
+import { type CacheKey, createTranslationCache } from "./translation-cache";
 
 function key(overrides: Partial<CacheKey> = {}): CacheKey {
   return {

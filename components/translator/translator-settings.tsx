@@ -1,6 +1,8 @@
 "use client";
 
+import { EllipsisVerticalIcon } from "lucide-react";
 import { useEffect, useState } from "react";
+import { SettingsDialog } from "@/components/settings-dialog";
 import { Button } from "@/components/ui/button";
 import { Kbd, KbdGroup } from "@/components/ui/kbd";
 import {
@@ -8,12 +10,10 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { SettingsDialog } from "@/components/settings-dialog";
 import {
   useTranslatorActions,
   useTranslatorPreferences,
 } from "./translator-context";
-import { EllipsisVerticalIcon } from "lucide-react";
 
 export function TranslatorSettings() {
   const { family, preset } = useTranslatorPreferences();

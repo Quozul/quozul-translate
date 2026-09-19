@@ -3,9 +3,9 @@ import {
   getFrequentLanguages,
   loadTranslationPreferences,
   parseTranslationPreferences,
-  saveTranslationPreferences,
   type StorageReader,
   type StorageWriter,
+  saveTranslationPreferences,
 } from "./preferences";
 
 const PREFERENCES_KEY = "qzl.preferences.v1";

@@ -1,11 +1,11 @@
 "use client";
 
-import { useRef, type ChangeEvent, type CompositionEvent } from "react";
+import { ClipboardPasteIcon, XIcon } from "lucide-react";
+import { type ChangeEvent, type CompositionEvent, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { MAX_TEXT_LENGTH } from "@/lib/translation-contract";
 import { displayedCharacterCount } from "@/lib/translation-text";
-import { ClipboardPasteIcon, XIcon } from "lucide-react";
 import {
   useTranslatorActions,
   useTranslatorEditor,

@@ -1,9 +1,9 @@
+import { isModelPreset, type ModelPreset } from "./models";
 import {
-  translationResponseBodySchema,
   type TranslationRequestBody,
   type TranslationResponseBody,
+  translationResponseBodySchema,
 } from "./translation-contract";
-import { isModelPreset, type ModelPreset } from "./models";
 
 export class TranslationFailure extends Error {}
 

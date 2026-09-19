@@ -1,8 +1,8 @@
 "use client";
 
+import { CopyIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { languageByCode } from "@/lib/languages";
-import { CopyIcon } from "lucide-react";
 import {
   useTranslatorActions,
   useTranslatorSession,

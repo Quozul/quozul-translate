@@ -1,15 +1,15 @@
 import { describe, expect, it } from "vitest";
+import { DETECT_SOURCE } from "@/lib/models";
 import {
   canSwapLanguages,
   createInitialState,
   getTranslationPresentation,
-  translatorReducer,
   type TranslationAttribution,
   type TranslationResult,
-  type TranslatorState,
   type TranslatorInputs,
+  type TranslatorState,
+  translatorReducer,
 } from "./translator-state";
-import { DETECT_SOURCE } from "@/lib/models";
 
 const BASE_INPUTS: TranslatorInputs = {
   text: "",

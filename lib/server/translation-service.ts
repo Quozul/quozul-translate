@@ -1,13 +1,13 @@
 import type { TranslationRequestBody } from "../translation-contract";
 import { ApiError } from "./errors";
+import type { ModelCompletion } from "./openai-adapter";
 import { buildPrompt } from "./prompts";
 import {
   cacheKeyFor,
   resolveRequest,
   type SanitizedRequest,
 } from "./resolve-request";
-import type { ModelCompletion } from "./openai-adapter";
-import { translationCache, type TranslationCache } from "./translation-cache";
+import { type TranslationCache, translationCache } from "./translation-cache";
 
 export interface TranslateOutcome {
   translation: string;

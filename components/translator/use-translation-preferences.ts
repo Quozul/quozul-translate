@@ -6,8 +6,8 @@ import {
   browserStorage,
   getFrequentLanguages,
   loadTranslationPreferences,
-  saveTranslationPreferences,
   type Preferences,
+  saveTranslationPreferences,
 } from "@/lib/preferences";
 import type { TranslatorInputs } from "./translator-state";
 

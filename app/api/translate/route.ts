@@ -1,11 +1,11 @@
-import { NextRequest, NextResponse } from "next/server";
-import {
-  translationRequestBodySchema,
-  type TranslationResponseBody,
-} from "@/lib/translation-contract";
+import { type NextRequest, NextResponse } from "next/server";
 import { ApiError } from "@/lib/server/errors";
 import { createCompletionFromEnvironment } from "@/lib/server/openai-adapter";
 import { translateRequest } from "@/lib/server/translation-service";
+import {
+  type TranslationResponseBody,
+  translationRequestBodySchema,
+} from "@/lib/translation-contract";
 
 export const runtime = "nodejs";
 

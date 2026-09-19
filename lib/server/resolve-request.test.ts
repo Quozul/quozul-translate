@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest";
 import type { TranslationRequestBody } from "../translation-contract";
 import { ApiError } from "./errors";
-import { cacheKeyFor, resolveRequest } from "./resolve-request";
 import { buildPrompt } from "./prompts";
+import { cacheKeyFor, resolveRequest } from "./resolve-request";
 
 function request(
   overrides: Partial<TranslationRequestBody> = {},

@@ -147,11 +147,9 @@ export function getLanguageGroups(options: {
   );
 
   return {
-    detection:
-      options.detection !== undefined &&
-      options.detection.label.toLowerCase().includes(normalized)
-        ? options.detection
-        : null,
+    detection: options.detection?.label.toLowerCase().includes(normalized)
+      ? options.detection
+      : null,
     frequent: topCodes
       .map((code) => languageByCode(code))
       .filter(

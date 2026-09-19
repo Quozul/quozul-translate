@@ -1,3 +1,4 @@
+import { LANGUAGES, languageByCode } from "./languages";
 import {
   DEFAULT_FAMILY,
   DEFAULT_PRESET,
@@ -8,7 +9,6 @@ import {
   type ModelPreset,
 } from "./models";
 import { DEFAULT_TARGET } from "./translation-contract";
-import { languageByCode, LANGUAGES } from "./languages";
 
 const PREFERENCES_KEY = "qzl.preferences.v1";
 

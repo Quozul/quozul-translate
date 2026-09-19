@@ -1,7 +1,7 @@
 "use client";
 
-import { toast } from "@/components/ui/toast";
 import { useCallback, useEffect, useRef } from "react";
+import { toast } from "@/components/ui/toast";
 
 export interface CopyFeedback {
   copy: (text: string) => void;

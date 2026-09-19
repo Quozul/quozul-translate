@@ -1,6 +1,6 @@
 "use client";
 
-import { cn } from "@/lib/utils";
+import { cn } from "cn";
 import { LanguageBar } from "./language-bar";
 import { SourceEditor } from "./source-editor";
 import { TranslationOutput } from "./translation-output";

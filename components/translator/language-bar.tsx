@@ -1,13 +1,13 @@
 "use client";
 
 import { LanguagePicker } from "@/components/language-picker";
+import { SwapLanguages } from "@/components/translator/swap-languages";
 import { DETECT_SOURCE } from "@/lib/models";
 import {
   useTranslatorActions,
   useTranslatorPreferences,
 } from "./translator-context";
 import { TranslatorSettings } from "./translator-settings";
-import { SwapLanguages } from "@/components/translator/swap-languages";
 
 const DETECT_OPTION = { value: DETECT_SOURCE, label: "Detect language" };
 
