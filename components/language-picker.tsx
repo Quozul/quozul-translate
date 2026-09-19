@@ -31,12 +31,6 @@ function LanguageOption({ language }: { language: Language }) {
   return (
     <span className="flex min-w-0 flex-1 items-baseline gap-2">
       <span>{language.name}</span>
-      <small dir="auto" className="truncate text-xs text-muted-foreground">
-        {language.native}
-      </small>
-      <span className="ml-auto text-xs text-muted-foreground">
-        {language.code}
-      </span>
     </span>
   );
 }
@@ -52,10 +46,6 @@ export function LanguagePicker({
   const [query, setQuery] = useState<string | null>(null);
   const detectValue = detect?.value;
   const detectLabel = detect?.label ?? "";
-  // Base UI derives the text it writes into the input from the raw item value, and it
-  // writes that text again once the popup finishes closing. Item values are language
-  // codes, so map them back to display names; the detection option lands in the
-  // input as "detect" without a label map for it too.
   const itemToStringLabel = useCallback(
     (value: string) =>
       value === detectValue
@@ -85,9 +75,6 @@ export function LanguagePicker({
       items={items}
       itemToStringLabel={itemToStringLabel}
       filter={() => true}
-      // Base UI only selects on Enter when an item is highlighted, and
-      // it does not highlight while typing by default. Without this, filtering to
-      // "English" then pressing Enter just closes the popup and keeps the old value.
       autoHighlight
       value={selected}
       onValueChange={(value) => {
@@ -100,9 +87,6 @@ export function LanguagePicker({
           setQuery(null);
           return;
         }
-        // Typing in a closed picker opens the popup after onInputValueChange has
-        // already delivered the typed text, so keep it instead of erasing the
-        // first keystroke.
         if (details.reason === "input-change") return;
         setQuery("");
       }}
