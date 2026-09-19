@@ -1,98 +1,79 @@
-# qzl-translate
+<div align="center">
 
-A minimal self-hosted translation web app: a Next.js 16 front end in
-`app/`/`components/`, a small validated policy layer in `lib/`, and any
-OpenAI-compatible completion server (MiLMMT / Hy-MT2 builds) behind
-`/api/translate`.
+# quozul-translate
 
-## Requirements
+**A minimal self-hosted translation web app**
 
-- pnpm (`corepack enable`; see `packageManager` in `package.json`)
+</div>
+
+> [!WARNING]
+> This is a vibe-coded project.
+
+## Introduction
+
+quozul-translate is a self-hosted translation web app. Type or paste text and
+watch it translate itself, using state-of-the-art open translation models that
+you run yourself, no APIs, no subscriptions, no third parties ever seeing
+your text.
+
+## Features
+
+### 🔒 Private by Design
+
+Your text never leaves your infrastructure. No tracking, no telemetry, no
+rate limits, no one reading over your shoulder.
+
+### 🤖 Local, Powerful AI Models
+
+Translation is served by three of the best open translation model families,
+each available in 3 sizes so you pick the speed-quality tradeoff for your needs.
+
+### 🔀 Automatic Model Fallback
+
+Pick a favorite model and the app quietly falls back to another family
+when your pick can't serve the language pair, so you always get a translation.
+
+### 🌍 Broad Language Coverage
+
+Over 50 languages supported, including Chinese, Japanese, Korean, Arabic,
+Hindi and many more.
+
+## Models
+
+All three model families are open-weight and available on Hugging Face:
+
+- **MiLMMT** (by Xiaomi)
+  - [1B](https://huggingface.co/xiaomi-research/MiLMMT-46-1B-v1.0)
+  - [4B](https://huggingface.co/xiaomi-research/MiLMMT-46-4B-v1.0)
+  - [12B](https://huggingface.co/xiaomi-research/MiLMMT-46-12B-v1.0)
+- **Hy-MT2** (by Tencent)
+  - [1.8B](https://huggingface.co/tencent/Hy-MT2-1.8B)
+  - [7B](https://huggingface.co/tencent/Hy-MT2-7B)
+  - [30B-A3B](https://huggingface.co/tencent/Hy-MT2-30B-A3B)
+- **TranslateGemma** (by Google)
+  - [4B](https://huggingface.co/google/translategemma-4b-it)
+  - [12B](https://huggingface.co/google/translategemma-12b-it)
+  - [27B](https://huggingface.co/google/translategemma-27b-it)
+
+## Quick Start
+
+### Requirements
+
+- pnpm
 - Node.js ≥ 20
 - A running OpenAI-compatible model server exposing `chat.completions`
-  with the local model IDs listed in `lib/server/model-ids.ts`
 
-## Environment variables
+### Environment
 
 | Variable          | Purpose                                     | Default                    |
 | ----------------- | ------------------------------------------- | -------------------------- |
 | `OPENAI_API_KEY`  | Required; requests fail with 503 when unset | —                          |
 | `OPENAI_BASE_URL` | OpenAI-compatible base URL                  | `http://127.0.0.1:9931/v1` |
 
-## Commands
+### Run it
 
-```bash
+```shell
+pnpm install
 pnpm dev          # dev server
-pnpm test         # vitest: request lifecycle, reducer, policies, cache
-pnpm typecheck    # tsc --noEmit
-pnpm lint         # eslint (next/core-web-vitals + typescript)
-pnpm format       # prettier --write (default settings)
-pnpm format:check # prettier --check
 pnpm build        # production build
-```
-
-## Behavior notes
-
-- Translation runs automatically on a 400 ms debounce after typing stops,
-  on desktop and mobile alike.
-- **IME composition** never fires intermediate requests; work resumes when
-  composition ends.
-- **Model selection** in Settings is a _preference_, not a guarantee: if
-  the selected family cannot serve the language pair (e.g. MiLMMT without
-  an explicit source — MiLMMT names the source language in its prompt and
-  has no detection mode), the request falls back to a family that can, in
-  `MODEL_FAMILIES` order. The response includes the family that actually
-  ran (`family` field, preserved on cache hits) plus the `preset`,
-  `cached`, and server-measured `durationMs` used by the status line.
-- **Model privacy**: the concrete provider model IDs (e.g.
-  `local/milmmt-46-4b`) live only in the `server-only` module
-  `lib/server/model-ids.ts`. The client-side registry `lib/models.ts`
-  carries just the family identity and preset, so the browser can show
-  `MiLMMT (Balanced)` without ever learning the underlying model name.
-- **Preferences** (target, source, family, preset, per-language usage)
-  persist in `localStorage` under `qzl.preferences.v1`. Reads are fully
-  validated: malformed records fall back field-by-field, legacy `model`
-  keys migrate, and bad usage counters are dropped rather than trusted.
-- **Caching** (`lib/server/translation-cache.ts`) is process-local: TTL
-  30 minutes, FIFO eviction (insertion order — reads do not refresh it),
-  256-entry and 16 MiB budgets. It is shared across requests to the same
-  Node process and resets on restart/module reload.
-- **Status line** (`components/translator/translation-output.tsx`) sits
-  below the translated text, together with loading and error messages.
-  While a translation is in progress there is no status text: three dots
-  bounce after the existing translation (or after the `Translation`
-  empty-state placeholder when none exists yet). When the text is ready the
-  status line reads
-  `Translated by <family> (<preset>) in <duration>ms (cached)` — for
-  example `Translated by MiLMMT (Balanced) in 812ms`. `durationMs` comes
-  from the server; if a response omits it, the client falls back to its
-  own round-trip measurement, and `"(cached)"` appears only for cache
-  hits. With no provenance at all it degrades to `Translation ready`.
-- **Request lifecycle** (`components/translator/use-translation-request.ts`):
-  one owner per request — ID token, abort controller, deadline. Results
-  and failures commit only while the request is still current, checked
-  after full body consumption, so stale responses can never overwrite
-  newer output.
-
-## Primitive stack
-
-The UI mixes two primitive libraries deliberately until a future
-migration: the combobox (`components/ui/combobox.tsx`) wraps
-**Base UI** (`@base-ui/react`, `render` convention); the sheet, select,
-dialog, and button primitives wrap **Radix** (`radix-ui`, `asChild`
-convention), while `components.json` still reports the shadcn
-`radix-nova` style. When touching mixed composition, verify refs,
-disabled state, and keyboard behavior against the actual underlying
-library.
-
-## Layout
-
-```
-app/                     Server Components + the one API route
-components/translator/   client feature: reducer state, hooks, panes
-lib/                     shared contract, validated preferences, registries
-lib/server/              request resolution, prompts, provider adapter,
-                          translation service, cache, provider model IDs
-                          (all `server-only` except the pure policy modules)
-tests/                   vitest support (stubs)
 ```
