@@ -56,6 +56,7 @@ export interface TranslatorState {
 
 export type TranslatorEvent =
   | { type: "textChanged"; text: string }
+  | { type: "textPasted"; text: string }
   | { type: "targetChanged"; target: string }
   | { type: "sourceChanged"; source: SourceLanguage }
   | { type: "languagesSwapped" }
@@ -135,6 +136,16 @@ function pendingFor(
   return { status: "waiting" };
 }
 
+/**
+ * A deliberate action (a swap, a paste) is a complete input, not the start of
+ * a typing burst: it must not wait out the debounce.
+ */
+function withoutDebounce(state: TranslatorState): TranslatorState {
+  return state.request.status === "waiting"
+    ? { ...state, request: { status: "waiting", immediate: true } }
+    : state;
+}
+
 function edited(
   state: TranslatorState,
   inputs: TranslatorInputs,
@@ -156,6 +167,11 @@ export function translatorReducer(
   switch (event.type) {
     case "textChanged":
       return edited(state, { ...state.inputs, text: event.text });
+
+    case "textPasted":
+      return withoutDebounce(
+        edited(state, { ...state.inputs, text: event.text }),
+      );
 
     case "targetChanged":
       return edited(state, { ...state.inputs, target: event.target });
@@ -180,9 +196,7 @@ export function translatorReducer(
         target: state.inputs.source,
       });
       // A swap is a deliberate action, not typing: translate without waiting.
-      return next.request.status === "waiting"
-        ? { ...next, request: { status: "waiting", immediate: true } }
-        : next;
+      return withoutDebounce(next);
     }
 
     case "textAppended": {

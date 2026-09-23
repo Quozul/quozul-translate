@@ -296,6 +296,27 @@ describe("translator reducer — pasting", () => {
     return translatorReducer(state, { type: "textAppended", text });
   }
 
+  function paste(state: TranslatorState, text: string): TranslatorState {
+    return translatorReducer(state, { type: "textPasted", text });
+  }
+
+  it("skips the debounce so a paste translates at once", () => {
+    const state = paste(createInitialState(), "hello world");
+    expect(state.inputs.text).toBe("hello world");
+    expect(state.request).toEqual({ status: "waiting", immediate: true });
+  });
+
+  it("replaces the draft like typing would", () => {
+    const state = paste(type(createInitialState(), "hello"), "bonjour");
+    expect(state.inputs.text).toBe("bonjour");
+    expect(state.request).toEqual({ status: "waiting", immediate: true });
+  });
+
+  it("validates pasted input like typed input", () => {
+    const state = paste(createInitialState(), "a".repeat(4_097));
+    expect(state.request).toMatchObject({ status: "failed" });
+  });
+
   it("fills an empty editor", () => {
     const state = append(createInitialState(), "hello");
     expect(state.inputs.text).toBe("hello");

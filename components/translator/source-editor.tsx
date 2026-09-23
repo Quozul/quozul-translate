@@ -16,17 +16,27 @@ const LIMIT_LABEL = MAX_TEXT_LENGTH.toLocaleString("en-US");
 
 export function SourceEditor() {
   const { text } = useTranslatorEditor();
-  const { changeText, startComposition, endComposition, clearText } =
+  const { changeText, pasteText, startComposition, endComposition, clearText } =
     useTranslatorActions();
-  const { paste } = usePasteFeedback(changeText);
+  const { paste } = usePasteFeedback(pasteText);
   const input = useRef<HTMLTextAreaElement>(null);
+  const pendingPaste = useRef(false);
 
   const charCount = displayedCharacterCount(text);
   const tooLong = charCount > MAX_TEXT_LENGTH;
   const showCount = charCount > MAX_TEXT_LENGTH - 1000;
 
   const handleTextChange = (event: ChangeEvent<HTMLTextAreaElement>) => {
-    changeText(event.target.value);
+    if (pendingPaste.current) {
+      pendingPaste.current = false;
+      pasteText(event.target.value);
+    } else {
+      changeText(event.target.value);
+    }
+  };
+
+  const handleNativePaste = () => {
+    pendingPaste.current = true;
   };
 
   const handleCompositionEnd = (
@@ -87,6 +97,7 @@ export function SourceEditor() {
         className="min-h-40 flex-1 resize-none overflow-y-auto rounded-lg border-0 bg-transparent px-2 text-2xl md:text-2xl field-sizing-fixed focus-visible:ring-3 focus-visible:ring-inset"
         value={text}
         onChange={handleTextChange}
+        onPaste={handleNativePaste}
         onCompositionStart={startComposition}
         onCompositionEnd={handleCompositionEnd}
       />
