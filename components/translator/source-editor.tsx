@@ -25,6 +25,7 @@ export function SourceEditor() {
   const charCount = displayedCharacterCount(text);
   const tooLong = charCount > MAX_TEXT_LENGTH;
   const showCount = charCount > MAX_TEXT_LENGTH - 1000;
+  const hasText = text.trim() !== ""
 
   const handleTextChange = (event: ChangeEvent<HTMLTextAreaElement>) => {
     if (pendingPaste.current) {
@@ -60,19 +61,8 @@ export function SourceEditor() {
       className="relative flex min-h-0 flex-col"
       aria-label="Source text"
     >
-      <div className="absolute top-1 right-1 z-10 flex items-center text-muted-foreground">
-        <Button
-          type="button"
-          variant="ghost"
-          size="icon"
-          aria-label="Paste from clipboard"
-          title="Paste from clipboard"
-          onClick={handlePaste}
-          className="md:hidden"
-        >
-          <ClipboardPasteIcon />
-        </Button>
-        {text !== "" && (
+      {hasText && (
+        <div className="absolute top-1 right-1 z-10 flex items-center text-muted-foreground">
           <Button
             type="button"
             variant="ghost"
@@ -83,8 +73,8 @@ export function SourceEditor() {
           >
             <XIcon />
           </Button>
-        )}
-      </div>
+        </div>
+      )}
       <Textarea
         id="source"
         ref={input}
@@ -94,13 +84,26 @@ export function SourceEditor() {
         aria-label="Text to translate"
         aria-invalid={tooLong || undefined}
         aria-describedby={showCount ? "source-limit" : undefined}
-        className="min-h-40 flex-1 resize-none overflow-y-auto rounded-lg border-0 bg-transparent px-2 text-2xl md:text-2xl field-sizing-fixed focus-visible:ring-3 focus-visible:ring-inset"
+        className="min-h-40 flex-1 resize-none overflow-y-auto rounded-lg border-0 bg-transparent pl-2 pr-10 text-2xl md:text-2xl field-sizing-fixed focus-visible:ring-3 focus-visible:ring-inset"
         value={text}
         onChange={handleTextChange}
         onPaste={handleNativePaste}
         onCompositionStart={startComposition}
         onCompositionEnd={handleCompositionEnd}
       />
+      {!hasText && (
+        <Button
+          type="button"
+          variant="outline"
+          aria-label="Paste from clipboard"
+          title="Paste from clipboard"
+          onClick={handlePaste}
+          className="mt-2 w-full text-base md:hidden"
+        >
+          <ClipboardPasteIcon />
+          Paste from clipboard
+        </Button>
+      )}
       {showCount && (
         <span
           id="source-limit"
